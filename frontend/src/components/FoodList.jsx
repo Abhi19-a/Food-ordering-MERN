@@ -29,7 +29,7 @@ export default function FoodList() {
 
   // local overrides for specific items
   const localMap = {
-    "Chicken Gravy Parota": "/images/chicken-gravy.jpg",
+    "Chicken Gravy Parota": "/images/chicken-gravy-parota.png",
     // add other local overrides if you want
   };
 
