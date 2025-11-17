@@ -1,15 +1,15 @@
 // src/components/Hero.jsx
 export default function Hero() {
-  // use updated image names
-  const bannerLeft = "/images/masala-dosa.jpg";
-  const bannerRight = "/images/chicken-biryani.jpg";
+  // use reliable external images
+  const bannerLeft = "https://images.unsplash.com/photo-1604908554007-43f2c87c37d7?q=80&w=800&auto=format&fit=crop"; // dosa-like
+  const bannerRight = "https://images.unsplash.com/photo-1604908181773-5c2f4d2d5b35?q=80&w=1200&auto=format&fit=crop"; // biryani-like
 
   return (
     <section className="hero">
       <div className="hero-inner">
         <div className="hero-left">
           <div className="hero-brand">
-            <img src="/logo192.png" alt="Food Court" className="hero-logo" />
+            <img src="/vite.svg" alt="Food Court" className="hero-logo" />
             <div>
               <div className="brand-name">Food Court</div>
               <div className="brand-tag">Your perfect homemaker</div>
@@ -25,7 +25,7 @@ export default function Hero() {
 
           <div className="hero-ctas">
             <a className="btn primary" href="#">Download Now</a>
-            <a className="btn" href="#">Explore Menu</a>
+            <a className="btn" href="#explore">Explore Menu</a>
           </div>
         </div>
 

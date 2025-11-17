@@ -2,6 +2,7 @@
 import "./App.css";
 import FoodList from "./components/FoodList";
 import Hero from "./components/Hero";
+import AdminPanel from "./components/AdminPanel";
 
 
 export default function App() {
@@ -13,14 +14,17 @@ export default function App() {
         </div>
 
         <div className="nav-actions">
-          <button className="btn">Explore</button>
-          <button className="btn primary">Admin</button>
+          <a className="btn" href="#explore">Explore</a>
+          <a className="btn primary" href="#admin">Admin</a>
         </div>
       </header>
 
       <main>
         <Hero />
-        <FoodList />
+        <section id="explore">
+          <FoodList />
+        </section>
+        <AdminPanel />
       </main>
 
       <footer className="app-footer">
