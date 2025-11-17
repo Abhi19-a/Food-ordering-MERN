@@ -30,13 +30,44 @@ const foodItems = [
     name: 'Maggi', 
     price: 30, 
     category: 'Veg Items',
-    imageUrl: 'https://images.unsplash.com/photo-1612929633738-8fe44ad4040c?q=80&w=800&auto=format&fit=crop'
+    imageUrl: '/images/maggi.jpg'
   },
-  { name: 'Cheese Maggi', price: 40, category: 'Veg Items' },
-  { name: 'French Fries', price: 40, category: 'Veg Items' },
-  { name: 'Peri Peri French Fries', price: 50, category: 'Veg Items' },
-  { name: 'French Fries with Cheese', price: 60, category: 'Veg Items' },
-  { name: 'Missel Pav', price: 40, category: 'Veg Items' },
+  { 
+    name: 'Cheese Maggi', 
+    price: 40, 
+    category: 'Veg Items',
+    imageUrl: '/images/cheese-maggi.jpg'
+  },
+  { 
+    name: 'French Fries', 
+    price: 40, 
+    category: 'Veg Items',
+    imageUrl: '/images/french-fries.jpg'
+  },
+  { 
+    name: 'Peri Peri French Fries', 
+    price: 50, 
+    category: 'Veg Items',
+    imageUrl: '/images/peri-peri-french-fries.jpg'
+  },
+  { 
+    name: 'French Fries with Cheese', 
+    price: 60, 
+    category: 'Veg Items',
+    imageUrl: '/images/French Fries with Cheese.jpg'
+  },
+  { 
+    name: 'Missel Pav', 
+    price: 40, 
+    category: 'Veg Items',
+    imageUrl: '/images/Missel Pav.jpg'
+  },
+  { 
+    name: 'Masala Dosa', 
+    price: 50, 
+    category: 'Veg Items',
+    imageUrl: '/images/masala-dosa.jpg'
+  },
   { name: 'Veg Burger', price: 60, category: 'Veg Items' },
   { name: 'Chapathi Kurma', price: 35, category: 'Veg Items' },
   { name: 'Idli Vada', price: 40, category: 'Veg Items' },
@@ -72,7 +103,12 @@ const foodItems = [
   { name: 'Curd Rice', price: 50, category: 'Veg Items' },
 
   // NON-VEG ITEMS
-  { name: 'Chicken Gravy Parota', price: 60, category: 'Non-Veg Items' },
+  { 
+    name: 'Chicken Gravy Parota', 
+    price: 60, 
+    category: 'Non-Veg Items',
+    imageUrl: '/images/chicken-gravy-parota.png'
+  },
   { name: 'Egg Gravy Parota', price: 50, category: 'Non-Veg Items' },
   { name: 'Kabab (1Pc)', price: 35, category: 'Non-Veg Items' },
   { 
@@ -92,7 +128,12 @@ const foodItems = [
   { name: 'Chicken Chilli', price: 100, category: 'Non-Veg Items' },
   { name: 'Chicken Manchurian', price: 100, category: 'Non-Veg Items' },
   { name: 'Pepper Chicken', price: 100, category: 'Non-Veg Items' },
-  { name: 'Chicken Biryani', price: 100, category: 'Non-Veg Items' },
+  { 
+    name: 'Chicken Biryani', 
+    price: 100, 
+    category: 'Non-Veg Items',
+    imageUrl: '/images/chicken-biryani.jpg'
+  },
   { name: 'Kori Rotti', price: 100, category: 'Non-Veg Items' },
   { name: 'Chicken Fried Rice', price: 80, category: 'Non-Veg Items' },
   { name: 'Chicken Noodles', price: 80, category: 'Non-Veg Items' },
