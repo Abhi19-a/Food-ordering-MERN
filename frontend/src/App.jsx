@@ -2,20 +2,17 @@
 import "./App.css";
 import FoodList from "./components/FoodList";
 import Hero from "./components/Hero";
-import AdminPanel from "./components/AdminPanel";
-
 
 export default function App() {
   return (
     <div className="app-container">
       <header className="app-header">
         <div className="brand">
-          <h1>Food Court <small>Demo MERN app</small></h1>
+          <h1>Food Court <small>MERN Food Ordering</small></h1>
         </div>
 
         <div className="nav-actions">
-          <a className="btn" href="#explore">Explore</a>
-          <a className="btn primary" href="#admin">Admin</a>
+          <a className="btn" href="#explore">Explore Menu</a>
         </div>
       </header>
 
@@ -24,7 +21,6 @@ export default function App() {
         <section id="explore">
           <FoodList />
         </section>
-        <AdminPanel />
       </main>
 
       <footer className="app-footer">
