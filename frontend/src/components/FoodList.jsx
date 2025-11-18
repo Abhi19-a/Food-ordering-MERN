@@ -1,6 +1,6 @@
 // src/components/FoodList.jsx
 import { useEffect, useState } from "react";
-import { fetchFoods } from "../utils/api";
+import { useApi } from "../api";
 
 export default function FoodList() {
   const [foods, setFoods] = useState([]);
@@ -9,22 +9,80 @@ export default function FoodList() {
   const [searchText, setSearchText] = useState("");
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
+  const [cart, setCart] = useState([]);
+  const [activeItem, setActiveItem] = useState(null);
+  const [cartQuantity, setCartQuantity] = useState(1);
+  const [showCartModal, setShowCartModal] = useState(false);
+
+  const { getFoods } = useApi();
+
+  const syncCartItem = (food, quantity) => {
+    setCart((prev) => {
+      const idx = prev.findIndex((item) => item._id === food._id);
+      if (quantity <= 0) {
+        if (idx === -1) return prev;
+        return prev.filter((item) => item._id !== food._id);
+      }
+      if (idx === -1) {
+        return [...prev, { ...food, quantity }];
+      }
+      const copy = [...prev];
+      copy[idx] = { ...copy[idx], quantity };
+      return copy;
+    });
+  };
+
+  const openCartModal = (food) => {
+    const existing = cart.find((item) => item._id === food._id);
+    const initialQty = existing?.quantity || 1;
+    setActiveItem(food);
+    setCartQuantity(initialQty);
+    syncCartItem(food, initialQty);
+    setShowCartModal(true);
+  };
+
+  const closeCartModal = () => {
+    setShowCartModal(false);
+    setActiveItem(null);
+    setCartQuantity(1);
+  };
+
+  const handleAddMore = () => {
+    if (!activeItem) return;
+    const nextQty = cartQuantity + 1;
+    setCartQuantity(nextQty);
+    syncCartItem(activeItem, nextQty);
+  };
+
+  const handleCancelOrder = () => {
+    if (!activeItem) return;
+    syncCartItem(activeItem, 0);
+    closeCartModal();
+  };
+
+  const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   useEffect(() => {
     let mounted = true;
-    fetchFoods()
-      .then((data) => {
+
+    const loadFoods = async () => {
+      try {
+        const data = await getFoods();
         if (mounted) setFoods(data);
-      })
-      .catch((e) => {
+      } catch (e) {
         console.error(e);
         if (mounted) setErr(e.message || "Error");
-      })
-      .finally(() => {
+      } finally {
         if (mounted) setLoading(false);
-      });
-    return () => (mounted = false);
-  }, []);
+      }
+    };
+
+    loadFoods();
+
+    return () => {
+      mounted = false;
+    };
+  }, [getFoods]);
 
   if (loading) return <div className="center">Loading foods…</div>;
   if (err) return <div className="center" style={{ color: "tomato" }}>{err}</div>;
@@ -117,7 +175,48 @@ export default function FoodList() {
   }, {});
 
   return (
-    <div className="food-list-container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
+    <div className="food-list-container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px', position: 'relative' }}>
+      {cart.length > 0 && (
+        <div style={{
+          position: 'sticky',
+          top: '10px',
+          zIndex: 5,
+          marginBottom: '20px'
+        }}>
+          <div style={{
+            background: '#0f172a',
+            color: 'white',
+            borderRadius: '16px',
+            padding: '1.5rem',
+            boxShadow: '0 10px 25px rgba(15,23,42,0.35)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: '1rem'
+          }}>
+            <div>
+              <div style={{ fontSize: '0.9rem', opacity: 0.7 }}>Cart</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 600 }}>{cart.length} item{cart.length > 1 ? 's' : ''}</div>
+              <div style={{ fontSize: '0.95rem', opacity: 0.8 }}>Total ₹{cartTotal.toFixed(2)}</div>
+            </div>
+            <button
+              style={{
+                background: '#22c55e',
+                border: 'none',
+                color: '#0f172a',
+                borderRadius: '12px',
+                padding: '0.75rem 1.5rem',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+              onClick={() => setShowCartModal(true)}
+            >
+              Review Cart
+            </button>
+          </div>
+        </div>
+      )}
+
       <div style={{ marginBottom: '20px' }}>
         <form onSubmit={onSearch} className="explore-search" style={{ marginBottom: '20px' }}>
           <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
@@ -239,8 +338,10 @@ export default function FoodList() {
                             width: '100%',
                             height: '100%',
                             objectFit: 'cover',
-                            transition: 'transform 0.3s ease'
+                            transition: 'transform 0.3s ease',
+                            cursor: 'pointer'
                           }}
+                          onClick={() => openCartModal(f)}
                         />
                       </div>
                       <div style={{ padding: '0 5px' }}>
@@ -284,6 +385,99 @@ export default function FoodList() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {showCartModal && activeItem && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(15,23,42,0.65)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 50,
+          padding: '1rem'
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '20px',
+            maxWidth: '420px',
+            width: '100%',
+            padding: '2rem',
+            boxShadow: '0 30px 60px rgba(15,23,42,0.35)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <div>
+                <h3 style={{ margin: 0 }}>{activeItem.name}</h3>
+                <p style={{ margin: '0.25rem 0', color: '#475569' }}>₹{activeItem.price.toFixed(2)} each</p>
+              </div>
+              <button
+                onClick={closeCartModal}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.5rem',
+                  cursor: 'pointer',
+                  color: '#64748b'
+                }}
+              >
+                &times;
+              </button>
+            </div>
+
+            <div style={{
+              background: '#f8fafc',
+              borderRadius: '16px',
+              padding: '1rem',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '1.5rem'
+            }}>
+              <div>
+                <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Quantity</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{cartQuantity}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Subtotal</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>₹{(activeItem.price * cartQuantity).toFixed(2)}</div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button
+                onClick={handleAddMore}
+                style={{
+                  flex: 1,
+                  background: '#22c55e',
+                  border: 'none',
+                  color: '#0f172a',
+                  padding: '0.85rem',
+                  borderRadius: '999px',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                Add More
+              </button>
+              <button
+                onClick={handleCancelOrder}
+                style={{
+                  flex: 1,
+                  background: 'transparent',
+                  border: '1px solid #e2e8f0',
+                  color: '#0f172a',
+                  padding: '0.85rem',
+                  borderRadius: '999px',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
