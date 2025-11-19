@@ -13,6 +13,7 @@ export default function FoodList() {
   const [activeItem, setActiveItem] = useState(null);
   const [cartQuantity, setCartQuantity] = useState(1);
   const [showCartModal, setShowCartModal] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
 
   const { getFoods } = useApi();
 
@@ -47,11 +48,15 @@ export default function FoodList() {
     setCartQuantity(1);
   };
 
+  const closeReviewModal = () => setShowReviewModal(false);
+
   const handleAddMore = () => {
     if (!activeItem) return;
-    const nextQty = cartQuantity + 1;
-    setCartQuantity(nextQty);
-    syncCartItem(activeItem, nextQty);
+    setCartQuantity((prevQty) => {
+      const nextQty = prevQty + 1;
+      syncCartItem(activeItem, nextQty);
+      return nextQty;
+    });
   };
 
   const handleCancelOrder = () => {
@@ -60,7 +65,14 @@ export default function FoodList() {
     closeCartModal();
   };
 
+  const handleRemoveFromCart = (foodId) => {
+    const food = cart.find((item) => item._id === foodId);
+    if (!food) return;
+    syncCartItem(food, 0);
+  };
+
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const cartItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   useEffect(() => {
     let mounted = true;
@@ -88,19 +100,43 @@ export default function FoodList() {
   if (err) return <div className="center" style={{ color: "tomato" }}>{err}</div>;
   if (!foods.length) return <div className="center">No foods found.</div>;
 
-  // Map of food names to their image paths
-  const localMap = {
-    "Buns": "/images/Buns.jpg",
-    "Chapathi Kurma": "/images/Chapathi Kurma.jpg",
-    "Idli Vada": "/images/Idli Vada.jpg",
-    "Onion Dosa": "/images/Onion Dosa.jpg",
-    "Plain Dosa": "/images/Plain Dosa.jpg",
-    "Pulav": "/images/Pulav.jpg",
-    "Puri Baji": "/images/Puri Baji.jpg",
-    "Set Dosa": "/images/Set Dosa.jpg",
-    "Tuppa Dosa": "/images/Tuppa Dosa.jpg",
-    "Veg Burger": "/images/Veg Burger.jpg"
+  // Local image assets keyed by slugified food name
+  const localImageMap = {
+    "buns": "/images/Buns.jpg",
+    "chapathi-kurma": "/images/Chapathi Kurma.jpg",
+    "dahi-vada": "/images/Dahi Vada.jpg",
+    "french-fries-with-cheese": "/images/French Fries with Cheese.jpg",
+    "idli-vada": "/images/Idli Vada.jpg",
+    "missel-pav": "/images/Missel Pav.jpg",
+    "onion-dosa": "/images/Onion Dosa.jpg",
+    "onion-pakoda": "/images/Onion Pakoda.jpg",
+    "parota-kurma": "/images/Parota Kurma.jpg",
+    "plain-dosa": "/images/Plain Dosa.jpg",
+    "pulav": "/images/Pulav.jpg",
+    "puri-baji": "/images/Puri Baji.jpg",
+    "schezwan-masala-dosa": "/images/Schezwan Masala Dosa.jpg",
+    "set-dosa": "/images/Set Dosa.jpg",
+    "tuppa-dosa": "/images/Tuppa Dosa.jpg",
+    "veg-burger": "/images/Veg Burger.jpg",
+    "veg-cutlet": "/images/Veg Cutlet.jpg",
+    "paneer-roll": "/images/paneer-roll.jpg",
+    "maggi": "/images/maggi.jpg",
+    "cheese-maggi": "/images/cheese-maggi.jpg",
+    "french-fries": "/images/french-fries.jpg",
+    "peri-peri-french-fries": "/images/peri-peri-french-fries.jpg",
+    "masala-dosa": "/images/masala-dosa.jpg",
+    "chicken-biryani": "/images/chicken-biryani.jpg",
+    "chicken-gravy-parota": "/images/chicken-gravy-parota.png"
   };
+
+  const toSlug = (value = "") => value
+    .toString()
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  const getLocalImage = (name) => localImageMap[toSlug(name)] || null;
 
   // deduplicate items by name+category+price to avoid visible duplicates
   const uniqueFoods = (() => {
@@ -196,7 +232,7 @@ export default function FoodList() {
           }}>
             <div>
               <div style={{ fontSize: '0.9rem', opacity: 0.7 }}>Cart</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 600 }}>{cart.length} item{cart.length > 1 ? 's' : ''}</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 600 }}>{cartItemsCount} item{cartItemsCount === 1 ? '' : 's'}</div>
               <div style={{ fontSize: '0.95rem', opacity: 0.8 }}>Total ₹{cartTotal.toFixed(2)}</div>
             </div>
             <button
@@ -209,7 +245,7 @@ export default function FoodList() {
                 fontWeight: 600,
                 cursor: 'pointer'
               }}
-              onClick={() => setShowCartModal(true)}
+              onClick={() => setShowReviewModal(true)}
             >
               Review Cart
             </button>
@@ -304,7 +340,7 @@ export default function FoodList() {
                 gap: '20px' 
               }}>
                 {items.map((f) => {
-                  const imgSrc = localMap[f.name] || f.imageUrl || "https://placehold.co/400x300?text=Food+Image";
+                  const imgSrc = f.imageUrl || getLocalImage(f.name) || "https://placehold.co/400x300?text=Food+Image";
                   return (
                     <div 
                       key={f._id} 
@@ -400,17 +436,19 @@ export default function FoodList() {
           padding: '1rem'
         }}>
           <div style={{
-            background: 'white',
+            background: '#0f172a',
+            color: '#f8fafc',
             borderRadius: '20px',
             maxWidth: '420px',
             width: '100%',
             padding: '2rem',
-            boxShadow: '0 30px 60px rgba(15,23,42,0.35)'
+            boxShadow: '0 30px 60px rgba(15,23,42,0.5)',
+            border: '1px solid rgba(226,232,240,0.15)'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <div>
-                <h3 style={{ margin: 0 }}>{activeItem.name}</h3>
-                <p style={{ margin: '0.25rem 0', color: '#475569' }}>₹{activeItem.price.toFixed(2)} each</p>
+                <h3 style={{ margin: 0, color: '#f8fafc' }}>{activeItem.name}</h3>
+                <p style={{ margin: '0.25rem 0', color: '#cbd5f5' }}>₹{activeItem.price.toFixed(2)} each</p>
               </div>
               <button
                 onClick={closeCartModal}
@@ -419,7 +457,7 @@ export default function FoodList() {
                   border: 'none',
                   fontSize: '1.5rem',
                   cursor: 'pointer',
-                  color: '#64748b'
+                  color: '#cbd5f5'
                 }}
               >
                 &times;
@@ -427,21 +465,22 @@ export default function FoodList() {
             </div>
 
             <div style={{
-              background: '#f8fafc',
+              background: 'rgba(226,232,240,0.08)',
               borderRadius: '16px',
               padding: '1rem',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              marginBottom: '1.5rem'
+              marginBottom: '1.5rem',
+              border: '1px solid rgba(148,163,184,0.15)'
             }}>
               <div>
-                <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Quantity</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{cartQuantity}</div>
+                <div style={{ fontSize: '0.85rem', color: '#cbd5f5' }}>Quantity</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#f8fafc' }}>{cartQuantity}</div>
               </div>
               <div>
-                <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Subtotal</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>₹{(activeItem.price * cartQuantity).toFixed(2)}</div>
+                <div style={{ fontSize: '0.85rem', color: '#cbd5f5' }}>Subtotal</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#f8fafc' }}>₹{(activeItem.price * cartQuantity).toFixed(2)}</div>
               </div>
             </div>
 
@@ -466,8 +505,8 @@ export default function FoodList() {
                 style={{
                   flex: 1,
                   background: 'transparent',
-                  border: '1px solid #e2e8f0',
-                  color: '#0f172a',
+                  border: '1px solid rgba(226,232,240,0.3)',
+                  color: '#f8fafc',
                   padding: '0.85rem',
                   borderRadius: '999px',
                   fontWeight: 600,
@@ -475,6 +514,118 @@ export default function FoodList() {
                 }}
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showReviewModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(15,23,42,0.65)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 40,
+          padding: '1rem'
+        }}>
+          <div style={{
+            background: '#0f172a',
+            color: '#f8fafc',
+            borderRadius: '20px',
+            maxWidth: '540px',
+            width: '100%',
+            padding: '2rem',
+            boxShadow: '0 30px 60px rgba(15,23,42,0.5)',
+            border: '1px solid rgba(226,232,240,0.1)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ margin: 0, color: '#f8fafc' }}>Cart Summary</h3>
+              <button
+                onClick={closeReviewModal}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.5rem',
+                  cursor: 'pointer',
+                  color: '#cbd5f5'
+                }}
+              >
+                &times;
+              </button>
+            </div>
+
+            {cart.length === 0 ? (
+              <div style={{ textAlign: 'center', color: '#cbd5f5', margin: '1.5rem 0' }}>
+                Your cart is empty.
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
+                {cart.map((item) => (
+                  <div
+                    key={item._id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '0.75rem 1rem',
+                      borderRadius: '12px',
+                      background: 'rgba(226,232,240,0.08)',
+                      border: '1px solid rgba(148,163,184,0.15)'
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontWeight: 600, color: '#f8fafc' }}>{item.name}</div>
+                      <div style={{ fontSize: '0.9rem', color: '#cbd5f5' }}>Qty: {item.quantity} · ₹{item.price.toFixed(2)} each</div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <div style={{ fontWeight: 600, color: '#f8fafc' }}>₹{(item.price * item.quantity).toFixed(2)}</div>
+                      <button
+                        onClick={() => handleRemoveFromCart(item._id)}
+                        style={{
+                          background: 'rgba(239,68,68,0.15)',
+                          border: '1px solid rgba(239,68,68,0.4)',
+                          color: '#f87171',
+                          borderRadius: '999px',
+                          padding: '0.45rem 0.9rem',
+                          cursor: 'pointer',
+                          fontWeight: 600
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              borderTop: '1px solid rgba(226,232,240,0.15)',
+              paddingTop: '1rem'
+            }}>
+              <div>
+                <div style={{ fontSize: '0.85rem', color: '#cbd5f5' }}>Total</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#f8fafc' }}>₹{cartTotal.toFixed(2)}</div>
+              </div>
+              <button
+                onClick={closeReviewModal}
+                style={{
+                  background: '#22c55e',
+                  border: 'none',
+                  color: '#0f172a',
+                  padding: '0.85rem 1.5rem',
+                  borderRadius: '999px',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                Continue
               </button>
             </div>
           </div>

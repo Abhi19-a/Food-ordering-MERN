@@ -18,6 +18,42 @@ const foodImages = {
   'Chat Items': 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?q=80&w=800&auto=format&fit=crop'
 };
 
+// Local image assets stored in frontend/public/images
+const localImageMap = {
+  'buns': '/images/Buns.jpg',
+  'chapathi-kurma': '/images/Chapathi Kurma.jpg',
+  'dahi-vada': '/images/Dahi Vada.jpg',
+  'french-fries-with-cheese': '/images/French Fries with Cheese.jpg',
+  'idli-vada': '/images/Idli Vada.jpg',
+  'missel-pav': '/images/Missel Pav.jpg',
+  'onion-dosa': '/images/Onion Dosa.jpg',
+  'onion-pakoda': '/images/Onion Pakoda.jpg',
+  'parota-kurma': '/images/Parota Kurma.jpg',
+  'plain-dosa': '/images/Plain Dosa.jpg',
+  'pulav': '/images/Pulav.jpg',
+  'puri-baji': '/images/Puri Baji.jpg',
+  'schezwan-masala-dosa': '/images/Schezwan Masala Dosa.jpg',
+  'set-dosa': '/images/Set Dosa.jpg',
+  'tuppa-dosa': '/images/Tuppa Dosa.jpg',
+  'veg-burger': '/images/Veg Burger.jpg',
+  'veg-cutlet': '/images/Veg Cutlet.jpg',
+  'paneer-roll': '/images/paneer-roll.jpg',
+  'maggi': '/images/maggi.jpg',
+  'cheese-maggi': '/images/cheese-maggi.jpg',
+  'french-fries': '/images/french-fries.jpg',
+  'peri-peri-french-fries': '/images/peri-peri-french-fries.jpg',
+  'masala-dosa': '/images/masala-dosa.jpg',
+  'chicken-biryani': '/images/chicken-biryani.jpg',
+  'chicken-gravy-parota': '/images/chicken-gravy-parota.png'
+};
+
+const toSlug = (value = '') => value
+  .toString()
+  .trim()
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g, '-')
+  .replace(/^-+|-+$/g, '');
+
 const foodItems = [
   // 🥗 VEG ITEMS
   { 
@@ -270,10 +306,14 @@ const seedDatabase = async () => {
     console.log('Cleared existing food items');
 
     // Add a default image URL for any items that might not have a specific image
-    const foodWithImages = foodItems.map(item => ({
-      ...item,
-      imageUrl: item.imageUrl || foodImages[item.category] || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=800&auto=format&fit=crop'
-    }));
+    const foodWithImages = foodItems.map(item => {
+      const slug = toSlug(item.name);
+      const resolvedImage = item.imageUrl || localImageMap[slug] || foodImages[item.category] || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=800&auto=format&fit=crop';
+      return {
+        ...item,
+        imageUrl: resolvedImage
+      };
+    });
 
     try {
       await Food.deleteMany({});

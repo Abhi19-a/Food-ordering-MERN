@@ -183,11 +183,7 @@ body{
   gap: 15px;
 }
 
-.hero-logo {
-  width: 70px;
-  height: 70px;
-  border-radius: 10px;
-}
+
 
 .brand-name {
   font-size: 34px;
@@ -237,17 +233,7 @@ body{
   justify-content: center;
 }
 
-.hero-image-wrap {
-  background: white;
-  padding: 20px;
-  border-radius: 16px;
-  box-shadow: 0 4px 18px rgba(0,0,0,0.15);
-}
 
-.hero-image {
-  width: 420px;
-  border-radius: 14px;
-}
 
 /* RESPONSIVE */
 @media (max-width: 900px) {
@@ -265,7 +251,5 @@ body{
     font-size: 36px;
   }
 
-  .hero-image {
-    width: 300px;
-  }
+
 }
