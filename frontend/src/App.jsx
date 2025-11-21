@@ -1,15 +1,23 @@
 // src/App.jsx
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Link, useLocation } from "react-router-dom";
 import { SignedIn, SignedOut, SignIn, SignUp, RedirectToSignIn, UserButton } from "@clerk/clerk-react";
 import "./App.css";
-import FoodList from "./components/FoodList";
 import Hero from "./components/Hero";
+import ImageGallery from "./components/ImageGallery";
+
+const signInLocalization = {
+  signIn: {
+    start: {
+      title: "Sign in to FoodCourt"
+    }
+  }
+};
 
 const HomePage = () => (
   <>
     <Hero />
-    <section id="explore">
-      <FoodList />
+    <section id="gallery">
+      <ImageGallery />
     </section>
   </>
 );
@@ -55,67 +63,78 @@ const LandingPage = () => (
     </SignedIn>
     <SignedOut>
       <AuthPageWrapper>
-        <SignIn routing="path" path="/" signUpUrl="/sign-up" />
+        <SignIn routing="path" path="/" signUpUrl="/sign-up" localization={signInLocalization} />
       </AuthPageWrapper>
     </SignedOut>
   </>
 );
 
-export default function App() {
-  return (
-    <Router>
-      <div className="app-container">
-        <header className="app-header">
-          <div className="brand">
-            <Link to="/">
-              <h1>
-                Food Court <small>MERN Food Ordering</small>
-              </h1>
-            </Link>
-          </div>
+const AppLayout = () => {
+  const location = useLocation();
+  const isAuthRoute = location.pathname.startsWith("/sign-in") || location.pathname.startsWith("/sign-up");
 
-          <div className="nav-actions" style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-            <SignedIn>
-              <Link className="btn btn-outline" to="/orders">
-                My Orders
-              </Link>
-              <UserButton afterSignOutUrl="/" />
-            </SignedIn>
+  return (
+    <div className="app-container">
+      <header className="app-header">
+        <div className="brand">
+          <Link to="/">
+            <h1>
+              Food Court <small>MERN Food Ordering</small>
+            </h1>
+          </Link>
+        </div>
+
+        <div className="nav-actions" style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+          <SignedIn>
+            <Link className="btn btn-outline" to="/orders">
+              My Orders
+            </Link>
+            <UserButton afterSignOutUrl="/" />
+          </SignedIn>
+          {!isAuthRoute && (
             <SignedOut>
               <Link className="btn" to="/sign-in">
                 Sign In / Sign Up
               </Link>
             </SignedOut>
-          </div>
-        </header>
+          )}
+        </div>
+      </header>
 
-        <main>
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/orders" element={<OrdersPage />} />
-            <Route
-              path="/sign-in/*"
-              element={
-                <AuthPageWrapper>
-                  <SignIn routing="path" path="/sign-in" signUpUrl="/sign-up" />
-                </AuthPageWrapper>
-              }
-            />
-            <Route
-              path="/sign-up/*"
-              element={
-                <AuthPageWrapper>
-                  <SignUp routing="path" path="/sign-up" signInUrl="/sign-in" />
-                </AuthPageWrapper>
-              }
-            />
-          </Routes>
-        </main>
+      <main>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/orders" element={<OrdersPage />} />
+          <Route
+            path="/sign-in/*"
+            element={
+              <AuthPageWrapper>
+                <SignIn routing="path" path="/sign-in" signUpUrl="/sign-up" localization={signInLocalization} />
+              </AuthPageWrapper>
+            }
+          />
+          <Route
+            path="/sign-up/*"
+            element={
+              <AuthPageWrapper>
+                <SignUp routing="path" path="/sign-up" signInUrl="/sign-in" />
+              </AuthPageWrapper>
+            }
+          />
+        </Routes>
+      </main>
 
-        <footer className="app-footer">
-          Backend: http://localhost:5000 • Frontend: Vite
-        </footer>
-      </div>
+      <footer className="app-footer">
+        Backend: http://localhost:5000 • Frontend: Vite
+      </footer>
+    </div>
+  );
+};
+
+export default function App() {
+  return (
+    <Router>
+      <AppLayout />
     </Router>
   );
 }

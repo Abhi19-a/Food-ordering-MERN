@@ -14,14 +14,14 @@ export default function Hero() {
 
           <h1 className="hero-heading">
             Welcome to the <strong>Food Court</strong>
-            <div className="hero-sub">
-              Download Our App • Order delicious meals
-            </div>
+          <div className="hero-sub">
+            Download Our App • Order delicious meals
+          </div>
           </h1>
 
           <div className="hero-ctas">
-            <a className="btn primary" href="#">Download Now</a>
-            <a className="btn" href="#explore">Explore Menu</a>
+          <a className="btn primary" href="#">Download Now</a>
+          <a className="btn" href="#gallery">Explore Menu</a>
           </div>
         </div>
 
