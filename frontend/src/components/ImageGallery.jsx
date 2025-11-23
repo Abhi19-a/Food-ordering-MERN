@@ -1,6 +1,10 @@
+// frontend/src/components/ImageGallery.jsx
 import { useEffect, useMemo, useState } from "react";
-import { useApi } from "../api";
+import { useNavigate } from "react-router-dom";
+import { api } from "../api";
 import { localImageFiles, toSlug } from "../data/localImages";
+import { useCart } from "../contexts/CartContext";
+import "./ImageGallery.css";
 
 const formatName = (filename) =>
   filename
@@ -10,74 +14,133 @@ const formatName = (filename) =>
     .trim();
 
 export default function ImageGallery() {
-  const [priceMap, setPriceMap] = useState({});
-  const [categoryMap, setCategoryMap] = useState({});
+  const [foods, setFoods] = useState([]);
   const [categories, setCategories] = useState(["All"]);
   const [activeCategory, setActiveCategory] = useState("All");
-  const { getFoods } = useApi();
+  const [loading, setLoading] = useState(true);
+  const { addToCart, cart } = useCart();
+  const navigate = useNavigate();
 
   useEffect(() => {
     let mounted = true;
 
-    const loadPrices = async () => {
+    const loadFoods = async () => {
       try {
-        const foods = await getFoods();
+        const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
+        console.log("=== Loading Foods ===");
+        console.log("API URL:", API_URL);
+        console.log("Full endpoint:", `${API_URL}/api/foods`);
+        
+        // Direct fetch to test connection
+        const testResponse = await fetch(`${API_URL}/api/foods`);
+        console.log("Response status:", testResponse.status);
+        console.log("Response ok:", testResponse.ok);
+        
+        if (!testResponse.ok) {
+          const errorText = await testResponse.text();
+          console.error("API Error:", errorText);
+          throw new Error(`API returned ${testResponse.status}: ${errorText}`);
+        }
+        
+        const foodItems = await testResponse.json();
         if (!mounted) return;
-        const priceAccumulator = {};
-        const categoryAccumulator = {};
-        const categorySet = new Set();
 
-        foods.forEach((food) => {
-          const slug = toSlug(food.name || "");
-          if (!slug) return;
-          if (priceAccumulator[slug] == null && typeof food.price === "number") {
-            priceAccumulator[slug] = food.price;
-          }
-          if (!categoryAccumulator[slug] && food.category) {
-            const normalizedCategory = food.category.trim();
-            categoryAccumulator[slug] = normalizedCategory;
-            categorySet.add(normalizedCategory);
-          }
+        console.log("✅ Fetched food items:", foodItems);
+        console.log("✅ Number of items:", foodItems?.length || 0);
+
+        if (!foodItems || !Array.isArray(foodItems) || foodItems.length === 0) {
+          console.warn("⚠️ No food items received from API");
+          setFoods([]);
+          setLoading(false);
+          return;
+        }
+
+        // Get unique categories
+        const uniqueCategories = [...new Set(foodItems.map(item => item.category).filter(Boolean))];
+        setCategories(["All", ...uniqueCategories]);
+        console.log("✅ Categories:", uniqueCategories);
+
+        // Map food items with their corresponding images
+        const foodsWithImages = foodItems.map(food => {
+          const imageFilename = localImageFiles.find(filename => {
+            const foodName = formatName(filename).toLowerCase();
+            return foodName.includes(food.name.toLowerCase()) || 
+                   food.name.toLowerCase().includes(foodName);
+          });
+
+          const foodWithImage = {
+            ...food,
+            // Ensure price is a number
+            price: Number(food.price) || 0,
+            imageUrl: imageFilename ? `/images/${imageFilename}` : (food.imageUrl || '/placeholder-food.jpg')
+          };
+
+          return foodWithImage;
         });
 
-        setPriceMap(priceAccumulator);
-        setCategoryMap(categoryAccumulator);
-        if (categorySet.size) {
-          setCategories((prev) => {
-            const ordered = Array.from(categorySet).sort((a, b) =>
-              a.localeCompare(b, undefined, { sensitivity: "base" })
-            );
-            return ["All", ...ordered];
-          });
-        }
+        console.log("✅ Processed foods with images:", foodsWithImages.length);
+        console.log("✅ First item:", foodsWithImages[0]);
+        setFoods(foodsWithImages);
       } catch (err) {
-        console.error("Unable to load prices for gallery", err);
+        console.error("❌ Error loading foods:", err);
+        console.error("❌ Error message:", err.message);
+        console.error("❌ Error stack:", err.stack);
+        setFoods([]);
+      } finally {
+        setLoading(false);
       }
     };
 
-    loadPrices();
-    return () => {
-      mounted = false;
-    };
-  }, [getFoods]);
-
-  const galleryItems = localImageFiles.map((filename) => {
-    const name = formatName(filename);
-    const slug = toSlug(name);
-    const price = priceMap[slug];
-    return {
-      filename,
-      src: `/images/${filename}`,
-      label: name,
-      price: typeof price === "number" ? price : null,
-      category: categoryMap[slug] || "Chef Specials"
-    };
-  });
+    loadFoods();
+    return () => { mounted = false; };
+  }, []);
 
   const filteredItems = useMemo(() => {
-    if (activeCategory === "All") return galleryItems;
-    return galleryItems.filter((item) => item.category === activeCategory);
-  }, [activeCategory, galleryItems]);
+    if (activeCategory === "All") return foods;
+    return foods.filter(item => item.category === activeCategory);
+  }, [activeCategory, foods]);
+
+  // Group items by category for better display
+  const groupedByCategory = useMemo(() => {
+    if (activeCategory !== "All") return { [activeCategory]: filteredItems };
+    
+    const grouped = {};
+    filteredItems.forEach(item => {
+      const cat = item.category || "Other";
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(item);
+    });
+    return grouped;
+  }, [filteredItems, activeCategory]);
+
+  const handleAddToCart = (e, food) => {
+    e.stopPropagation();
+    addToCart({ 
+      ...food, 
+      id: food._id || food.name,
+      price: Number(food.price) || 0
+    }, 1);
+  };
+
+  if (loading) {
+    return <div className="loading">Loading delicious food items...</div>;
+  }
+
+  if (foods.length === 0 && !loading) {
+    return (
+      <section className="gallery-section">
+        <div className="loading" style={{ padding: "40px", textAlign: "center" }}>
+          <p>No food items available.</p>
+          <p style={{ fontSize: "14px", color: "#666", marginTop: "10px" }}>
+            Please check:
+            <br />1. Backend server is running on http://localhost:4000
+            <br />2. Open browser console (F12) to see error details
+            <br />3. Make sure you restarted the frontend after .env changes
+          </p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="gallery-section">
@@ -100,24 +163,72 @@ export default function ImageGallery() {
         </div>
       </div>
 
-      <div className="gallery-grid">
-        {filteredItems.map((item) => {
-          const isVeg = item.category?.toLowerCase().includes("veg");
-          return (
-          <figure key={item.filename} className="gallery-card">
-            <div className="gallery-card-badge">
-              <span className={`gallery-pill ${isVeg ? "veg" : "regular"}`}>{item.category}</span>
+      {filteredItems.length === 0 ? (
+        <div className="loading" style={{ padding: "40px", textAlign: "center" }}>
+          No items found in this category. Try selecting a different category.
+        </div>
+      ) : (
+        <div className="gallery-container">
+          {Object.entries(groupedByCategory).map(([category, items]) => (
+            <div key={category} className="category-section">
+              {activeCategory === "All" && (
+                <h2 className="category-title">
+                  {category}
+                  <span className="category-count">({items.length} items)</span>
+                </h2>
+              )}
+              <div className="gallery-grid">
+                {items.map((food) => {
+                  const isVeg = food.category?.toLowerCase().includes("veg");
+                  const cartItem = cart.find(item => item.id === food._id || item.id === food.name);
+                  const quantity = cartItem?.quantity || 0;
+                  
+                  return (
+                    <div 
+                      key={food._id || food.name}
+                      className="gallery-card"
+                      onClick={() => navigate(`/product/${food._id || toSlug(food.name)}`)}
+                    >
+                      <div className="gallery-card-badge">
+                        <span className={`gallery-pill ${isVeg ? "veg" : "non-veg"}`}>
+                          {isVeg ? "VEG" : "NON-VEG"}
+                        </span>
+                      </div>
+                      {quantity > 0 && (
+                        <div className="quantity-badge">
+                          {quantity} in cart
+                        </div>
+                      )}
+                      <img 
+                        src={food.imageUrl} 
+                        alt={food.name} 
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = '/placeholder-food.jpg';
+                        }} 
+                      />
+                      <div className="gallery-card-content">
+                        <h3 className="gallery-item-name">{food.name}</h3>
+                        <div className="gallery-item-footer">
+                          <span className="gallery-price">
+                            ₹{food.price && food.price > 0 ? Number(food.price).toFixed(0) : "N/A"}
+                          </span>
+                          <button 
+                            className="add-to-cart-btn"
+                            onClick={(e) => handleAddToCart(e, food)}
+                          >
+                            {quantity > 0 ? `Add More (${quantity})` : "Add to Cart"}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-            <img src={item.src} alt={item.label} loading="lazy" />
-            <figcaption>
-              <span>{item.label}</span>
-              <span className="gallery-price">{item.price != null ? `₹${item.price}` : "₹--"}</span>
-            </figcaption>
-          </figure>
-        );
-        })}
-      </div>
+          ))}
+        </div>
+      )}
     </section>
   );
 }
-

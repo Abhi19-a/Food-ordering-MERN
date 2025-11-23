@@ -1,6 +1,6 @@
 import { useAuth } from "@clerk/clerk-react";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
 export const useApi = () => {
   const { getToken } = useAuth();
@@ -46,11 +46,23 @@ export const useApi = () => {
 
 export const api = {
   getPublicFoods: async () => {
-    const response = await fetch(`${API_BASE_URL}/api/foods`);
-    if (!response.ok) {
-      throw new Error("Failed to fetch foods");
+    try {
+      console.log("Fetching from:", `${API_BASE_URL}/api/foods`);
+      const response = await fetch(`${API_BASE_URL}/api/foods`);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("API Error Response:", errorText);
+        throw new Error(`Failed to fetch foods: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log("API Response received:", data?.length || 0, "items");
+      return data;
+    } catch (error) {
+      console.error("Fetch error:", error);
+      throw error;
     }
-    return response.json();
   },
 };
 

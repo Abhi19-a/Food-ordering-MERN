@@ -15,6 +15,7 @@ export default function FoodList() {
   const [cartQuantity, setCartQuantity] = useState(1);
   const [showCartModal, setShowCartModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   const { getFoods } = useApi();
 
@@ -34,12 +35,13 @@ export default function FoodList() {
     });
   };
 
-  const openCartModal = (food) => {
-    const existing = cart.find((item) => item._id === food._id);
+  const handleFoodItemClick = (food) => {
+    console.log('Clicked on food item:', food);
+    const existing = cart.find(item => item._id === food._id);
     const initialQty = existing?.quantity || 1;
-    setActiveItem(food);
+    
+    setActiveItem({...food});
     setCartQuantity(initialQty);
-    syncCartItem(food, initialQty);
     setShowCartModal(true);
   };
 
@@ -60,6 +62,15 @@ export default function FoodList() {
     });
   };
 
+  const handleDecreaseQuantity = () => {
+    if (!activeItem) return;
+    setCartQuantity((prevQty) => {
+      const nextQty = Math.max(1, prevQty - 1);
+      syncCartItem(activeItem, nextQty);
+      return nextQty;
+    });
+  };
+
   const handleCancelOrder = () => {
     if (!activeItem) return;
     syncCartItem(activeItem, 0);
@@ -70,6 +81,28 @@ export default function FoodList() {
     const food = cart.find((item) => item._id === foodId);
     if (!food) return;
     syncCartItem(food, 0);
+  };
+
+  const handleUpdateQuantity = (foodId, newQuantity) => {
+    if (newQuantity <= 0) {
+      handleRemoveFromCart(foodId);
+      return;
+    }
+    const food = cart.find((item) => item._id === foodId);
+    if (food) {
+      syncCartItem(food, newQuantity);
+    }
+  };
+
+  const handleContinueShopping = () => {
+    setShowReviewModal(false);
+    // Scroll to top or food list
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleProceedToPayment = () => {
+    setShowReviewModal(false);
+    setShowPaymentModal(true);
   };
 
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -119,16 +152,26 @@ export default function FoodList() {
   const categories = ["All"];
   const seenCategories = new Set();
   
+  // Build categories, merging 'Juices' into 'Juices & Beverages'
   foods.forEach(food => {
-    // Normalize category names to handle case variations
     const normalizedCategory = food.category ? food.category.trim() : '';
-    if (normalizedCategory && !seenCategories.has(normalizedCategory)) {
-      // If we find 'Juices' but not 'Juices & Beverages', add the latter instead
-      if (normalizedCategory.toLowerCase() === 'juices' && !seenCategories.has('Juices & Beverages')) {
+    if (!normalizedCategory) return;
+    
+    const normalized = normalize(normalizedCategory);
+    
+    // Skip 'Juices' category - always use 'Juices & Beverages' instead
+    if (normalized === 'juices') {
+      if (!seenCategories.has('Juices & Beverages')) {
         seenCategories.add('Juices & Beverages');
-      } else if (normalizedCategory.toLowerCase() !== 'juices') {
-        seenCategories.add(normalizedCategory);
       }
+    } 
+    // Add 'Juices & Beverages' if it exists
+    else if (normalized === 'juices & beverages') {
+      seenCategories.add('Juices & Beverages');
+    }
+    // Add all other categories normally
+    else if (!seenCategories.has(normalizedCategory)) {
+      seenCategories.add(normalizedCategory);
     }
   });
 
@@ -139,9 +182,13 @@ export default function FoodList() {
   const displayFoods = uniqueFoods.filter((f) => {
     // Apply category filter
     if (activeCategory !== "All") {
+      const foodCategory = f.category ? f.category.trim() : '';
+      const foodCategoryNormalized = normalize(foodCategory);
+      
       // Show items that match the active category, or 'Juices' when 'Juices & Beverages' is selected
       const categoryMatch = f.category === activeCategory || 
-                          (activeCategory === 'Juices & Beverages' && f.category === 'Juices');
+                          (activeCategory === 'Juices & Beverages' && 
+                           (foodCategoryNormalized === 'juices' || foodCategoryNormalized === 'juices & beverages'));
       if (!categoryMatch) {
         return false;
       }
@@ -165,15 +212,22 @@ export default function FoodList() {
     setQuery(searchText.trim());
   };
 
-  // Group foods by category
+  // Group foods by category, normalizing 'Juices' to 'Juices & Beverages'
   const foodsByCategory = displayFoods.reduce((acc, food) => {
-    const category = food.category || 'Uncategorized';
+    let category = food.category || 'Uncategorized';
+    // Normalize 'Juices' to 'Juices & Beverages' for display
+    if (normalize(category) === 'juices') {
+      category = 'Juices & Beverages';
+    }
     if (!acc[category]) {
       acc[category] = [];
     }
     acc[category].push(food);
     return acc;
   }, {});
+
+  // Debug: Log state changes
+  console.log('FoodList render - showCartModal:', showCartModal, 'activeItem:', activeItem?.name, 'cart:', cart);
 
   return (
     <div className="food-list-container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px', position: 'relative' }}>
@@ -217,6 +271,35 @@ export default function FoodList() {
           </div>
         </div>
       )}
+
+      {/* TEST BUTTON - Click this to test if modal works */}
+      <div style={{ marginBottom: '10px', padding: '10px', background: '#ffeb3b', borderRadius: '5px' }}>
+        <button 
+          onClick={() => {
+            console.log('TEST BUTTON CLICKED');
+            if (foods && foods.length > 0) {
+              console.log('Opening cart with first food:', foods[0]);
+              handleFoodItemClick(foods[0]);
+            } else {
+              alert('No foods loaded yet');
+            }
+          }}
+          style={{
+            padding: '10px 20px',
+            background: '#ff6b6b',
+            color: 'white',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            fontWeight: 'bold'
+          }}
+        >
+          🧪 TEST: Click to Open Cart Modal (First Item)
+        </button>
+        <span style={{ marginLeft: '10px', fontSize: '12px' }}>
+          showCartModal: {showCartModal ? 'TRUE' : 'FALSE'} | activeItem: {activeItem ? activeItem.name : 'NULL'}
+        </span>
+      </div>
 
       <div style={{ marginBottom: '20px' }}>
         <form onSubmit={onSearch} className="explore-search" style={{ marginBottom: '20px' }}>
@@ -310,6 +393,7 @@ export default function FoodList() {
                     <div 
                       key={f._id} 
                       className="food-item" 
+                      onClick={() => handleFoodItemClick(f)}
                       style={{
                         display: 'flex',
                         flexDirection: 'column',
@@ -320,18 +404,30 @@ export default function FoodList() {
                         transition: 'all 0.3s ease',
                         backgroundColor: '#fff',
                         height: '100%',
-                        '&:hover': {
-                          transform: 'translateY(-5px)',
-                          boxShadow: '0 6px 16px rgba(0,0,0,0.15)'
-                        }
+                        cursor: 'pointer',
+                        cursor: 'pointer',
+                        position: 'relative',
+                        zIndex: 1
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-5px)';
+                        e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.15)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
                       }}
                     >
-                      <div style={{ 
-                        width: '100%',
-                        height: '200px',
-                        borderRadius: '8px',
-                        overflow: 'hidden'
-                      }}>
+                      <div 
+                        style={{
+                          width: '100%',
+                          height: '200px',
+                          borderRadius: '8px',
+                          overflow: 'hidden',
+                          position: 'relative',
+                          zIndex: 1
+                        }}
+                      >
                         <img 
                           src={imgSrc} 
                           alt={f.name}
@@ -340,24 +436,31 @@ export default function FoodList() {
                             height: '100%',
                             objectFit: 'cover',
                             transition: 'transform 0.3s ease',
-                            cursor: 'pointer'
+                            pointerEvents: 'none',
+                            userSelect: 'none',
+                            WebkitUserSelect: 'none',
+                            WebkitTouchCallout: 'none'
                           }}
-                          onClick={() => openCartModal(f)}
+                          draggable={false}
                         />
                       </div>
                       <div style={{ padding: '0 5px' }}>
-                        <div style={{ 
-                          display: 'flex', 
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          marginBottom: '8px'
-                        }}>
-                          <h3 style={{ 
-                            margin: 0, 
-                            fontSize: '18px',
-                            fontWeight: '600',
-                            color: '#333'
-                          }}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: '8px'
+                          }}
+                        >
+                          <h3
+                            style={{
+                              margin: 0,
+                              fontSize: '18px',
+                              fontWeight: '600',
+                              color: '#333'
+                            }}
+                          >
                             {f.name}
                           </h3>
                           <span style={{ 
@@ -379,6 +482,36 @@ export default function FoodList() {
                             {f.description}
                           </p>
                         )}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('Add to Cart button clicked for:', f.name);
+                            handleFoodItemClick(f);
+                          }}
+                          style={{
+                            width: '100%',
+                            marginTop: '12px',
+                            padding: '10px',
+                            background: '#ff6b6b',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '8px',
+                            fontSize: '16px',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            transition: 'background 0.2s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = '#ff5252';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = '#ff6b6b';
+                          }}
+                        >
+                          Add to Cart
+                        </button>
                       </div>
                     </div>
                   );
@@ -389,15 +522,16 @@ export default function FoodList() {
         </div>
       )}
 
-      {showCartModal && activeItem && (
-        <div style={{
+      {/* Always render modal but control visibility with display property */}
+      <div 
+        style={{
           position: 'fixed',
           inset: 0,
-          background: 'rgba(15,23,42,0.65)',
-          display: 'flex',
+          background: 'rgba(0,0,0,0.7)',
+          display: showCartModal ? 'flex' : 'none',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 50,
+          zIndex: 1000,
           padding: '1rem'
         }}>
           <div style={{
@@ -449,7 +583,22 @@ export default function FoodList() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '1rem' }}>
+            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+              <button
+                onClick={handleDecreaseQuantity}
+                style={{
+                  flex: 1,
+                  background: 'rgba(239,68,68,0.15)',
+                  border: '1px solid rgba(239,68,68,0.4)',
+                  color: '#f87171',
+                  padding: '0.85rem',
+                  borderRadius: '999px',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                - Decrease
+              </button>
               <button
                 onClick={handleAddMore}
                 style={{
@@ -463,24 +612,24 @@ export default function FoodList() {
                   cursor: 'pointer'
                 }}
               >
-                Add More
-              </button>
-              <button
-                onClick={handleCancelOrder}
-                style={{
-                  flex: 1,
-                  background: 'transparent',
-                  border: '1px solid rgba(226,232,240,0.3)',
-                  color: '#f8fafc',
-                  padding: '0.85rem',
-                  borderRadius: '999px',
-                  fontWeight: 600,
-                  cursor: 'pointer'
-                }}
-              >
-                Cancel
+                + Add More
               </button>
             </div>
+            <button
+              onClick={handleCancelOrder}
+              style={{
+                width: '100%',
+                background: 'transparent',
+                border: '1px solid rgba(226,232,240,0.3)',
+                color: '#f8fafc',
+                padding: '0.85rem',
+                borderRadius: '999px',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              Remove from Cart
+            </button>
           </div>
         </div>
       )}
@@ -527,7 +676,7 @@ export default function FoodList() {
                 Your cart is empty.
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem', maxHeight: '400px', overflowY: 'auto' }}>
                 {cart.map((item) => (
                   <div
                     key={item._id}
@@ -535,31 +684,79 @@ export default function FoodList() {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      padding: '0.75rem 1rem',
+                      padding: '1rem',
                       borderRadius: '12px',
                       background: 'rgba(226,232,240,0.08)',
-                      border: '1px solid rgba(148,163,184,0.15)'
+                      border: '1px solid rgba(148,163,184,0.15)',
+                      gap: '1rem'
                     }}
                   >
-                    <div>
-                      <div style={{ fontWeight: 600, color: '#f8fafc' }}>{item.name}</div>
-                      <div style={{ fontSize: '0.9rem', color: '#cbd5f5' }}>Qty: {item.quantity} · ₹{item.price.toFixed(2)} each</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600, color: '#f8fafc', marginBottom: '0.25rem' }}>{item.name}</div>
+                      <div style={{ fontSize: '0.9rem', color: '#cbd5f5' }}>₹{item.price.toFixed(2)} each</div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                      <div style={{ fontWeight: 600, color: '#f8fafc' }}>₹{(item.price * item.quantity).toFixed(2)}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(226,232,240,0.1)', borderRadius: '8px', padding: '0.25rem' }}>
+                        <button
+                          onClick={() => handleUpdateQuantity(item._id, item.quantity - 1)}
+                          style={{
+                            background: 'rgba(239,68,68,0.2)',
+                            border: '1px solid rgba(239,68,68,0.4)',
+                            color: '#f87171',
+                            borderRadius: '6px',
+                            width: '32px',
+                            height: '32px',
+                            cursor: 'pointer',
+                            fontWeight: 600,
+                            fontSize: '18px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          −
+                        </button>
+                        <span style={{ minWidth: '30px', textAlign: 'center', fontWeight: 600, color: '#f8fafc' }}>
+                          {item.quantity}
+                        </span>
+                        <button
+                          onClick={() => handleUpdateQuantity(item._id, item.quantity + 1)}
+                          style={{
+                            background: 'rgba(34,197,94,0.2)',
+                            border: '1px solid rgba(34,197,94,0.4)',
+                            color: '#22c55e',
+                            borderRadius: '6px',
+                            width: '32px',
+                            height: '32px',
+                            cursor: 'pointer',
+                            fontWeight: 600,
+                            fontSize: '18px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          +
+                        </button>
+                      </div>
+                      <div style={{ minWidth: '80px', textAlign: 'right', fontWeight: 600, color: '#f8fafc' }}>
+                        ₹{(item.price * item.quantity).toFixed(2)}
+                      </div>
                       <button
                         onClick={() => handleRemoveFromCart(item._id)}
                         style={{
                           background: 'rgba(239,68,68,0.15)',
                           border: '1px solid rgba(239,68,68,0.4)',
                           color: '#f87171',
-                          borderRadius: '999px',
-                          padding: '0.45rem 0.9rem',
+                          borderRadius: '8px',
+                          padding: '0.5rem 0.75rem',
                           cursor: 'pointer',
-                          fontWeight: 600
+                          fontWeight: 600,
+                          fontSize: '0.85rem'
                         }}
+                        title="Remove item"
                       >
-                        Remove
+                        ×
                       </button>
                     </div>
                   </div>
@@ -568,29 +765,262 @@ export default function FoodList() {
             )}
 
             <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
               borderTop: '1px solid rgba(226,232,240,0.15)',
               paddingTop: '1rem'
             }}>
-              <div>
-                <div style={{ fontSize: '0.85rem', color: '#cbd5f5' }}>Total</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#f8fafc' }}>₹{cartTotal.toFixed(2)}</div>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '1rem'
+              }}>
+                <div>
+                  <div style={{ fontSize: '0.85rem', color: '#cbd5f5' }}>Total ({cartItemsCount} {cartItemsCount === 1 ? 'item' : 'items'})</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#f8fafc' }}>₹{cartTotal.toFixed(2)}</div>
+                </div>
               </div>
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <button
+                  onClick={handleContinueShopping}
+                  style={{
+                    flex: 1,
+                    background: 'transparent',
+                    border: '1px solid rgba(226,232,240,0.3)',
+                    color: '#f8fafc',
+                    padding: '0.85rem 1.5rem',
+                    borderRadius: '999px',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Continue Shopping
+                </button>
+                <button
+                  onClick={handleProceedToPayment}
+                  style={{
+                    flex: 1,
+                    background: '#22c55e',
+                    border: 'none',
+                    color: '#0f172a',
+                    padding: '0.85rem 1.5rem',
+                    borderRadius: '999px',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Proceed to Payment
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showPaymentModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(15,23,42,0.65)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 50,
+          padding: '1rem'
+        }}>
+          <div style={{
+            background: '#0f172a',
+            color: '#f8fafc',
+            borderRadius: '20px',
+            maxWidth: '600px',
+            width: '100%',
+            padding: '2rem',
+            boxShadow: '0 30px 60px rgba(15,23,42,0.5)',
+            border: '1px solid rgba(226,232,240,0.1)',
+            maxHeight: '90vh',
+            overflowY: 'auto'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h2 style={{ margin: 0, color: '#f8fafc' }}>Payment</h2>
               <button
-                onClick={closeReviewModal}
+                onClick={() => setShowPaymentModal(false)}
                 style={{
-                  background: '#22c55e',
+                  background: 'transparent',
                   border: 'none',
-                  color: '#0f172a',
+                  fontSize: '1.5rem',
+                  cursor: 'pointer',
+                  color: '#cbd5f5'
+                }}
+              >
+                &times;
+              </button>
+            </div>
+
+            {/* Order Summary */}
+            <div style={{ marginBottom: '2rem' }}>
+              <h3 style={{ margin: '0 0 1rem 0', color: '#f8fafc', fontSize: '1.1rem' }}>Order Summary</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem' }}>
+                {cart.map((item) => (
+                  <div
+                    key={item._id}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      padding: '0.75rem',
+                      borderRadius: '8px',
+                      background: 'rgba(226,232,240,0.08)',
+                      border: '1px solid rgba(148,163,184,0.15)'
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontWeight: 600, color: '#f8fafc' }}>{item.name}</div>
+                      <div style={{ fontSize: '0.85rem', color: '#cbd5f5' }}>Qty: {item.quantity} × ₹{item.price.toFixed(2)}</div>
+                    </div>
+                    <div style={{ fontWeight: 600, color: '#f8fafc' }}>₹{(item.price * item.quantity).toFixed(2)}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{
+                borderTop: '1px solid rgba(226,232,240,0.15)',
+                paddingTop: '1rem',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+                <div style={{ fontSize: '1.1rem', fontWeight: 600, color: '#f8fafc' }}>Total</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#22c55e' }}>₹{cartTotal.toFixed(2)}</div>
+              </div>
+            </div>
+
+            {/* Customer Details Form */}
+            <div style={{ marginBottom: '2rem' }}>
+              <h3 style={{ margin: '0 0 1rem 0', color: '#f8fafc', fontSize: '1.1rem' }}>Customer Details</h3>
+              <form style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', color: '#cbd5f5', fontSize: '0.9rem' }}>
+                    Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Enter your name"
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(148,163,184,0.3)',
+                      background: 'rgba(226,232,240,0.05)',
+                      color: '#f8fafc',
+                      fontSize: '1rem'
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', color: '#cbd5f5', fontSize: '0.9rem' }}>
+                    Phone Number *
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    placeholder="Enter your phone number"
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(148,163,184,0.3)',
+                      background: 'rgba(226,232,240,0.05)',
+                      color: '#f8fafc',
+                      fontSize: '1rem'
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', color: '#cbd5f5', fontSize: '0.9rem' }}>
+                    Delivery Address *
+                  </label>
+                  <textarea
+                    required
+                    placeholder="Enter your delivery address"
+                    rows={3}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(148,163,184,0.3)',
+                      background: 'rgba(226,232,240,0.05)',
+                      color: '#f8fafc',
+                      fontSize: '1rem',
+                      resize: 'vertical',
+                      fontFamily: 'inherit'
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', color: '#cbd5f5', fontSize: '0.9rem' }}>
+                    Payment Method *
+                  </label>
+                  <select
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(148,163,184,0.3)',
+                      background: 'rgba(226,232,240,0.05)',
+                      color: '#f8fafc',
+                      fontSize: '1rem'
+                    }}
+                  >
+                    <option value="" style={{ background: '#0f172a', color: '#f8fafc' }}>Select payment method</option>
+                    <option value="cash" style={{ background: '#0f172a', color: '#f8fafc' }}>Cash on Delivery</option>
+                    <option value="upi" style={{ background: '#0f172a', color: '#f8fafc' }}>UPI</option>
+                    <option value="card" style={{ background: '#0f172a', color: '#f8fafc' }}>Card</option>
+                  </select>
+                </div>
+              </form>
+            </div>
+
+            {/* Action Buttons */}
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button
+                onClick={() => {
+                  setShowPaymentModal(false);
+                  setShowReviewModal(true);
+                }}
+                style={{
+                  flex: 1,
+                  background: 'transparent',
+                  border: '1px solid rgba(226,232,240,0.3)',
+                  color: '#f8fafc',
                   padding: '0.85rem 1.5rem',
                   borderRadius: '999px',
                   fontWeight: 600,
                   cursor: 'pointer'
                 }}
               >
-                Continue
+                Back to Cart
+              </button>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  // Handle payment submission here
+                  alert('Order placed successfully! Your order will be delivered soon.');
+                  setCart([]);
+                  setShowPaymentModal(false);
+                  setShowReviewModal(false);
+                }}
+                style={{
+                  flex: 2,
+                  background: '#22c55e',
+                  border: 'none',
+                  color: '#0f172a',
+                  padding: '0.85rem 1.5rem',
+                  borderRadius: '999px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontSize: '1rem'
+                }}
+              >
+                Place Order (₹{cartTotal.toFixed(2)})
               </button>
             </div>
           </div>

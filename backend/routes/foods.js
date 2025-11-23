@@ -29,6 +29,32 @@ router.get("/categories", async (req, res) => {
   }
 });
 
+// GET /api/foods/slug/:slug - Get food by slug (must come before /:id)
+router.get("/slug/:slug", async (req, res) => {
+  try {
+    const food = await Food.findOne({ slug: req.params.slug });
+    if (!food) {
+      return res.status(404).json({ error: "Food not found" });
+    }
+    res.json(food);
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// GET /api/foods/:id - Get food by ID
+router.get("/:id", async (req, res) => {
+  try {
+    const food = await Food.findById(req.params.id);
+    if (!food) {
+      return res.status(404).json({ error: "Food not found" });
+    }
+    res.json(food);
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 // POST create food
 router.post("/", async (req, res) => {
   try {
@@ -57,6 +83,20 @@ router.delete("/:id", async (req, res) => {
     res.json({ msg: "Deleted" });
   } catch (err) {
     res.status(400).json({ error: "Delete failed" });
+  }
+});
+
+// PATCH /api/foods/fix-missing-prices: Set a default price if missing
+router.patch("/fix-missing-prices", async (req, res) => {
+  const defaultPrice = 30;
+  try {
+    const result = await Food.updateMany(
+      { $or: [{ price: { $exists: false } }, { price: null }] },
+      { $set: { price: defaultPrice } }
+    );
+    res.json({ fixedCount: result.modifiedCount });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fix missing prices" });
   }
 });
 
