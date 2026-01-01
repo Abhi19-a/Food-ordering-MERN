@@ -460,7 +460,8 @@ const seedDatabase = async () => {
     // Also generate slugs since insertMany doesn't trigger pre-save hooks
     const foodWithImages = foodItems.map(item => {
       const slug = toSlug(item.name);
-      const resolvedImage = item.imageUrl || localImageMap[slug] || foodImages[item.category] || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=800&auto=format&fit=crop';
+      // Always prefer localImageMap if available (ensures match with actual frontend/public/images/)
+      let resolvedImage = localImageMap[slug] || item.imageUrl || foodImages[item.category] || 'https://placehold.co/400x300?text=No+Image';
       return {
         ...item,
         slug: slug, // Explicitly set slug since insertMany doesn't trigger pre-save hooks

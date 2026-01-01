@@ -114,9 +114,24 @@ export default function FoodList() {
     const loadFoods = async () => {
       try {
         const data = await getFoods();
+        // #region agent log (H1 H3 H5)
+        const _dbg1 = {location:'FoodList.jsx:useEffect', message:'Foods fetched from backend', data:{count:Array.isArray(data)?data.length:'not array', example:Array.isArray(data)?data.slice(0,3):data}, timestamp:Date.now(), sessionId:'debug-session',runId:'run1',hypothesisId:'H1_H3_H5'};
+console.log('[DEBUG LOG]', _dbg1);
+fetch('http://127.0.0.1:7242/ingest/1ee4de27-3e18-4bba-b840-237c70697464',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify(_dbg1)
+        }).catch(()=>{});
+        // #endregion
         if (mounted) setFoods(data);
       } catch (e) {
         console.error(e);
+        // #region agent log (H5)
+        fetch('http://127.0.0.1:7242/ingest/1ee4de27-3e18-4bba-b840-237c70697464',{
+          method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({location:'FoodList.jsx:useEffect-catch',message:'Error fetching foods',data:{error:e.message,stack:e.stack},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})
+        }).catch(()=>{});
+        // #endregion
         if (mounted) setErr(e.message || "Error");
       } finally {
         if (mounted) setLoading(false);
@@ -388,7 +403,23 @@ export default function FoodList() {
                 gap: '20px' 
               }}>
                 {items.map((f) => {
+                  // #region agent log (H1 H3)
+                  const _dbg2 = {location:'FoodList.jsx:render-map',message:'Render food',data:{name:f.name,imageUrl:f.imageUrl},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1_H3'};
+console.log('[DEBUG LOG]', _dbg2);
+fetch('http://127.0.0.1:7242/ingest/1ee4de27-3e18-4bba-b840-237c70697464',{
+                    method:'POST',headers:{'Content-Type':'application/json'},
+                    body:JSON.stringify(_dbg2)
+                  }).catch(()=>{});
+                  // #endregion
                   const imgSrc = f.imageUrl || getLocalImage(f.name) || "https://placehold.co/400x300?text=Food+Image";
+                  // #region agent log (H1 H2 H3 H4)
+                  const _dbg3 = {location:'FoodList.jsx:render-map',message:'imgSrc computed',data:{name:f.name,imgSrc},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1_H2_H3_H4'};
+console.log('[DEBUG LOG]', _dbg3);
+fetch('http://127.0.0.1:7242/ingest/1ee4de27-3e18-4bba-b840-237c70697464', {
+                    method:'POST',headers:{'Content-Type':'application/json'},
+                    body:JSON.stringify(_dbg3)
+                  }).catch(()=>{});
+                  // #endregion
                   return (
                     <div 
                       key={f._id} 
@@ -428,8 +459,8 @@ export default function FoodList() {
                           zIndex: 1
                         }}
                       >
-                        <img 
-                          src={imgSrc} 
+                        <img
+                          src={imgSrc}
                           alt={f.name}
                           style={{
                             width: '100%',
@@ -442,6 +473,30 @@ export default function FoodList() {
                             WebkitTouchCallout: 'none'
                           }}
                           draggable={false}
+                          onError={e => {
+                            // #region agent log (H2 H4)
+                            const _dbg4 = {location:'FoodList.jsx:onError',message:'Image failed to load',data:{name:f.name,src:e.target.src},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2_H4'};
+console.log('[DEBUG LOG]', _dbg4);
+fetch('http://127.0.0.1:7242/ingest/1ee4de27-3e18-4bba-b840-237c70697464', {
+                              method:'POST',headers:{'Content-Type':'application/json'},
+                              body:JSON.stringify(_dbg4)
+                            }).catch(()=>{});
+                            // #endregion
+                            const fallback = getLocalImage(f.name) || 'https://placehold.co/400x300?text=Food+Image';
+                            // #region agent log (H2 H4)
+                            const _dbg5 = {location:'FoodList.jsx:onError',message:'Trying fallback image',data:{name:f.name,fallback},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2_H4'};
+console.log('[DEBUG LOG]', _dbg5);
+fetch('http://127.0.0.1:7242/ingest/1ee4de27-3e18-4bba-b840-237c70697464', {
+                              method:'POST',headers:{'Content-Type':'application/json'},
+                              body:JSON.stringify(_dbg5)
+                            }).catch(()=>{});
+                            // #endregion
+                            if (e.target.src !== window.location.origin + fallback && fallback.startsWith('/')) {
+                              e.target.src = window.location.origin + fallback;
+                            } else if (!fallback.startsWith('/')) {
+                              e.target.src = fallback;
+                            }
+                          }}
                         />
                       </div>
                       <div style={{ padding: '0 5px' }}>

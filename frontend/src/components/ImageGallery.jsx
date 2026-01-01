@@ -47,6 +47,11 @@ export default function ImageGallery() {
 
         console.log("✅ Fetched food items:", foodItems);
         console.log("✅ Number of items:", foodItems?.length || 0);
+        // #region agent log (H1 H3 H5)
+        const _dbgImg1 = {location:'ImageGallery.jsx:loadFoods',message:'Foods fetched from backend',data:{count:Array.isArray(foodItems)?foodItems.length:'not array',example:Array.isArray(foodItems)?foodItems.slice(0,3).map(f=>({name:f.name,imageUrl:f.imageUrl})):foodItems},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'H1_H3_H5'};
+        console.log('[DEBUG LOG]', _dbgImg1);
+        fetch('http://127.0.0.1:7242/ingest/1ee4de27-3e18-4bba-b840-237c70697464',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(_dbgImg1)}).catch(()=>{});
+        // #endregion
 
         if (!foodItems || !Array.isArray(foodItems) || foodItems.length === 0) {
           console.warn("⚠️ No food items received from API");
@@ -68,11 +73,18 @@ export default function ImageGallery() {
                    food.name.toLowerCase().includes(foodName);
           });
 
+          const finalImageUrl = imageFilename ? `/images/${imageFilename}` : (food.imageUrl || '/placeholder-food.jpg');
+          // #region agent log (H1 H2 H3 H4)
+          const _dbgImg2 = {location:'ImageGallery.jsx:map-images',message:'Image URL resolved',data:{name:food.name,backendImageUrl:food.imageUrl,matchedFilename:imageFilename,finalImageUrl},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'H1_H2_H3_H4'};
+          console.log('[DEBUG LOG]', _dbgImg2);
+          fetch('http://127.0.0.1:7242/ingest/1ee4de27-3e18-4bba-b840-237c70697464',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(_dbgImg2)}).catch(()=>{});
+          // #endregion
+
           const foodWithImage = {
             ...food,
             // Ensure price is a number
             price: Number(food.price) || 0,
-            imageUrl: imageFilename ? `/images/${imageFilename}` : (food.imageUrl || '/placeholder-food.jpg')
+            imageUrl: finalImageUrl
           };
 
           return foodWithImage;
@@ -203,6 +215,11 @@ export default function ImageGallery() {
                         src={food.imageUrl} 
                         alt={food.name} 
                         onError={(e) => {
+                          // #region agent log (H2 H4)
+                          const _dbgImg3 = {location:'ImageGallery.jsx:onError',message:'Image failed to load',data:{name:food.name,src:e.target.src,foodImageUrl:food.imageUrl},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'H2_H4'};
+                          console.log('[DEBUG LOG]', _dbgImg3);
+                          fetch('http://127.0.0.1:7242/ingest/1ee4de27-3e18-4bba-b840-237c70697464',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(_dbgImg3)}).catch(()=>{});
+                          // #endregion
                           e.target.onerror = null;
                           e.target.src = '/placeholder-food.jpg';
                         }} 
