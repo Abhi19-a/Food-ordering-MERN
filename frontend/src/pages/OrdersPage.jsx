@@ -1,11 +1,48 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams, Link } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
+import { api } from '../api';
 import './OrdersPage.css';
 
 const OrdersPage = () => {
   const [orders, setOrders] = useState([]);
+  const [successMessage, setSuccessMessage] = useState(null);
+  const [searchParams] = useSearchParams();
+  const { clearCart } = useCart();
 
   useEffect(() => {
+    // Check if coming from successful Stripe payment
+    const isSuccess = searchParams.get('success') === 'true';
+    const pendingOrderId = localStorage.getItem('pendingOrderId');
+
+    if (isSuccess && pendingOrderId) {
+      // Clear cart and show success message
+      clearCart();
+      setSuccessMessage(`Payment successful! Order ID: ${pendingOrderId}`);
+      localStorage.removeItem('pendingOrderId');
+
+      // Save order to local storage
+      const newOrder = {
+        orderId: pendingOrderId,
+        date: new Date().toISOString(),
+        items: JSON.parse(localStorage.getItem('lastCartItems') || '[]'),
+        total: parseFloat(localStorage.getItem('lastCartTotal') || '0'),
+        status: 'Paid'
+      };
+
+      try {
+        const savedOrders = localStorage.getItem('foodOrders');
+        const existingOrders = savedOrders ? JSON.parse(savedOrders) : [];
+        existingOrders.push(newOrder);
+        localStorage.setItem('foodOrders', JSON.stringify(existingOrders));
+      } catch (error) {
+        console.error('Error saving order:', error);
+      }
+
+      // Clear URL params
+      window.history.replaceState({}, '', '/orders');
+    }
+
     // Load orders from localStorage
     try {
       const savedOrders = localStorage.getItem('foodOrders');
@@ -18,10 +55,12 @@ const OrdersPage = () => {
     } catch (error) {
       console.error('Error loading orders:', error);
     }
-  }, []);
+  }, [searchParams, clearCart]);
 
   const getStatusColor = (status) => {
     switch (status) {
+      case 'Paid':
+        return '#22c55e';
       case 'Delivered':
         return '#22c55e';
       case 'Out for Delivery':
@@ -39,10 +78,33 @@ const OrdersPage = () => {
     return (
       <div className="orders-page">
         <h1>My Orders</h1>
+        {successMessage && (
+          <div style={{
+            background: '#dcfce7',
+            color: '#166534',
+            padding: '16px',
+            borderRadius: '8px',
+            marginBottom: '20px',
+            textAlign: 'center'
+          }}>
+            ✅ {successMessage}
+          </div>
+        )}
         <div className="no-orders">
           <div className="no-orders-icon">📦</div>
           <h2>No orders yet</h2>
           <p>Your order history will appear here once you place an order.</p>
+          <Link to="/" style={{
+            display: 'inline-block',
+            marginTop: '16px',
+            padding: '12px 24px',
+            background: '#ff6b6b',
+            color: 'white',
+            borderRadius: '8px',
+            textDecoration: 'none'
+          }}>
+            Start Shopping
+          </Link>
         </div>
       </div>
     );
@@ -51,7 +113,20 @@ const OrdersPage = () => {
   return (
     <div className="orders-page">
       <h1>My Orders ({orders.length})</h1>
-      
+
+      {successMessage && (
+        <div style={{
+          background: '#dcfce7',
+          color: '#166534',
+          padding: '16px',
+          borderRadius: '8px',
+          marginBottom: '20px',
+          textAlign: 'center'
+        }}>
+          ✅ {successMessage}
+        </div>
+      )}
+
       <div className="orders-list">
         {orders.map((order, index) => (
           <div key={index} className="order-card">
@@ -75,10 +150,10 @@ const OrdersPage = () => {
             </div>
 
             <div className="order-items">
-              {order.items.map((item, itemIndex) => (
+              {order.items && order.items.map((item, itemIndex) => (
                 <div key={itemIndex} className="order-item">
-                  <img 
-                    src={item.imageUrl || '/placeholder-food.jpg'} 
+                  <img
+                    src={item.imageUrl || '/placeholder-food.jpg'}
                     alt={item.name}
                     onError={(e) => {
                       e.target.onerror = null;
@@ -100,7 +175,7 @@ const OrdersPage = () => {
             <div className="order-footer">
               <div className="order-total">
                 <span>Total Amount:</span>
-                <span className="total-amount">₹{order.total.toFixed(2)}</span>
+                <span className="total-amount">₹{order.total?.toFixed(2) || '0.00'}</span>
               </div>
               {order.deliveryAddress && (
                 <div className="order-address">
@@ -116,4 +191,3 @@ const OrdersPage = () => {
 };
 
 export default OrdersPage;
-

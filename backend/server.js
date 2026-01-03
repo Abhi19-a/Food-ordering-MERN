@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import connectDB from "./config.js";
 import foodsRouter from "./routes/foods.js";
+import paymentRouter from "./routes/payment.js";
 
 dotenv.config();
 const app = express();
@@ -15,6 +16,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/foods", foodsRouter);
+app.use("/api/payment", paymentRouter);
 
 const PORT = process.env.PORT || 4000;
 
