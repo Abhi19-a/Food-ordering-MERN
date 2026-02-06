@@ -50,3 +50,8 @@ coverage/
 *.temp
 *.bak
 *.old
+
+# Temporary check/debug scripts
+backend/checkAPI.js
+backend/checkPrices.js
+backend/env-config.js

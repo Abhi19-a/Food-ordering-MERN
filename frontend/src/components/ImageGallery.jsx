@@ -1,4 +1,4 @@
-// frontend/src/components/ImageGallery.jsx
+﻿// frontend/src/components/ImageGallery.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api";
@@ -17,6 +17,7 @@ export default function ImageGallery() {
   const [foods, setFoods] = useState([]);
   const [categories, setCategories] = useState(["All"]);
   const [activeCategory, setActiveCategory] = useState("All");
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const { addToCart, cart } = useCart();
   const navigate = useNavigate();
@@ -30,31 +31,31 @@ export default function ImageGallery() {
         console.log("=== Loading Foods ===");
         console.log("API URL:", API_URL);
         console.log("Full endpoint:", `${API_URL}/api/foods`);
-        
+
         // Direct fetch to test connection
         const testResponse = await fetch(`${API_URL}/api/foods`);
         console.log("Response status:", testResponse.status);
         console.log("Response ok:", testResponse.ok);
-        
+
         if (!testResponse.ok) {
           const errorText = await testResponse.text();
           console.error("API Error:", errorText);
           throw new Error(`API returned ${testResponse.status}: ${errorText}`);
         }
-        
+
         const foodItems = await testResponse.json();
         if (!mounted) return;
 
-        console.log("✅ Fetched food items:", foodItems);
-        console.log("✅ Number of items:", foodItems?.length || 0);
+        console.log("âœ… Fetched food items:", foodItems);
+        console.log("âœ… Number of items:", foodItems?.length || 0);
         // #region agent log (H1 H3 H5)
-        const _dbgImg1 = {location:'ImageGallery.jsx:loadFoods',message:'Foods fetched from backend',data:{count:Array.isArray(foodItems)?foodItems.length:'not array',example:Array.isArray(foodItems)?foodItems.slice(0,3).map(f=>({name:f.name,imageUrl:f.imageUrl})):foodItems},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'H1_H3_H5'};
+        const _dbgImg1 = { location: 'ImageGallery.jsx:loadFoods', message: 'Foods fetched from backend', data: { count: Array.isArray(foodItems) ? foodItems.length : 'not array', example: Array.isArray(foodItems) ? foodItems.slice(0, 3).map(f => ({ name: f.name, imageUrl: f.imageUrl })) : foodItems }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run2', hypothesisId: 'H1_H3_H5' };
         console.log('[DEBUG LOG]', _dbgImg1);
-        fetch('http://127.0.0.1:7242/ingest/1ee4de27-3e18-4bba-b840-237c70697464',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(_dbgImg1)}).catch(()=>{});
+        fetch('http://127.0.0.1:7242/ingest/1ee4de27-3e18-4bba-b840-237c70697464', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(_dbgImg1) }).catch(() => { });
         // #endregion
 
         if (!foodItems || !Array.isArray(foodItems) || foodItems.length === 0) {
-          console.warn("⚠️ No food items received from API");
+          console.warn("âš ï¸ No food items received from API");
           setFoods([]);
           setLoading(false);
           return;
@@ -63,21 +64,21 @@ export default function ImageGallery() {
         // Get unique categories
         const uniqueCategories = [...new Set(foodItems.map(item => item.category).filter(Boolean))];
         setCategories(["All", ...uniqueCategories]);
-        console.log("✅ Categories:", uniqueCategories);
+        console.log("âœ… Categories:", uniqueCategories);
 
         // Map food items with their corresponding images
         const foodsWithImages = foodItems.map(food => {
           const imageFilename = localImageFiles.find(filename => {
             const foodName = formatName(filename).toLowerCase();
-            return foodName.includes(food.name.toLowerCase()) || 
-                   food.name.toLowerCase().includes(foodName);
+            return foodName.includes(food.name.toLowerCase()) ||
+              food.name.toLowerCase().includes(foodName);
           });
 
           const finalImageUrl = imageFilename ? `/images/${imageFilename}` : (food.imageUrl || '/placeholder-food.jpg');
           // #region agent log (H1 H2 H3 H4)
-          const _dbgImg2 = {location:'ImageGallery.jsx:map-images',message:'Image URL resolved',data:{name:food.name,backendImageUrl:food.imageUrl,matchedFilename:imageFilename,finalImageUrl},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'H1_H2_H3_H4'};
+          const _dbgImg2 = { location: 'ImageGallery.jsx:map-images', message: 'Image URL resolved', data: { name: food.name, backendImageUrl: food.imageUrl, matchedFilename: imageFilename, finalImageUrl }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run2', hypothesisId: 'H1_H2_H3_H4' };
           console.log('[DEBUG LOG]', _dbgImg2);
-          fetch('http://127.0.0.1:7242/ingest/1ee4de27-3e18-4bba-b840-237c70697464',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(_dbgImg2)}).catch(()=>{});
+          fetch('http://127.0.0.1:7242/ingest/1ee4de27-3e18-4bba-b840-237c70697464', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(_dbgImg2) }).catch(() => { });
           // #endregion
 
           const foodWithImage = {
@@ -90,13 +91,13 @@ export default function ImageGallery() {
           return foodWithImage;
         });
 
-        console.log("✅ Processed foods with images:", foodsWithImages.length);
-        console.log("✅ First item:", foodsWithImages[0]);
+        console.log("âœ… Processed foods with images:", foodsWithImages.length);
+        console.log("âœ… First item:", foodsWithImages[0]);
         setFoods(foodsWithImages);
       } catch (err) {
-        console.error("❌ Error loading foods:", err);
-        console.error("❌ Error message:", err.message);
-        console.error("❌ Error stack:", err.stack);
+        console.error("âŒ Error loading foods:", err);
+        console.error("âŒ Error message:", err.message);
+        console.error("âŒ Error stack:", err.stack);
         setFoods([]);
       } finally {
         setLoading(false);
@@ -108,14 +109,24 @@ export default function ImageGallery() {
   }, []);
 
   const filteredItems = useMemo(() => {
-    if (activeCategory === "All") return foods;
-    return foods.filter(item => item.category === activeCategory);
-  }, [activeCategory, foods]);
+    let items = activeCategory === "All" ? foods : foods.filter(item => item.category === activeCategory);
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      items = items.filter(item =>
+        item.name?.toLowerCase().includes(query) ||
+        item.category?.toLowerCase().includes(query)
+      );
+    }
+
+    return items;
+  }, [activeCategory, foods, searchQuery]);
 
   // Group items by category for better display
   const groupedByCategory = useMemo(() => {
     if (activeCategory !== "All") return { [activeCategory]: filteredItems };
-    
+
     const grouped = {};
     filteredItems.forEach(item => {
       const cat = item.category || "Other";
@@ -127,8 +138,8 @@ export default function ImageGallery() {
 
   const handleAddToCart = (e, food) => {
     e.stopPropagation();
-    addToCart({ 
-      ...food, 
+    addToCart({
+      ...food,
       id: food._id || food.name,
       price: Number(food.price) || 0
     }, 1);
@@ -141,6 +152,7 @@ export default function ImageGallery() {
   if (foods.length === 0 && !loading) {
     return (
       <section className="gallery-section">
+
         <div className="loading" style={{ padding: "40px", textAlign: "center" }}>
           <p>No food items available.</p>
           <p style={{ fontSize: "14px", color: "#666", marginTop: "10px" }}>
@@ -156,6 +168,32 @@ export default function ImageGallery() {
 
   return (
     <section className="gallery-section">
+      {/* Search Bar */}
+      <div className="search-container">
+        <div className="search-wrapper">
+          <svg className="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.35-4.35" />
+          </svg>
+          <input
+            type="text"
+            className="search-input"
+            placeholder="Search for dishes, categories..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button
+              className="search-clear"
+              onClick={() => setSearchQuery("")}
+              aria-label="Clear search"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      </div>
+
       <div className="gallery-filter-row">
         <div>
           <p className="gallery-kicker">Browse by category</p>
@@ -191,12 +229,23 @@ export default function ImageGallery() {
               )}
               <div className="gallery-grid">
                 {items.map((food) => {
-                  const isVeg = food.category?.toLowerCase().includes("veg");
+                  // Check if item is non-veg based on category or item name
+                  const nonVegKeywords = ['chicken', 'egg', 'kabab', 'mutton', 'fish', 'meat', 'prawn', 'seafood'];
+                  const itemName = food.name?.toLowerCase() || '';
+                  const categoryName = food.category?.toLowerCase() || '';
+
+                  // Check for abbreviations like "C." or "C " which stand for Chicken
+                  const hasChickenAbbreviation = itemName.startsWith('c.') || itemName.startsWith('c ');
+
+                  const isNonVeg = categoryName === "non-veg items" ||
+                    nonVegKeywords.some(keyword => itemName.includes(keyword)) ||
+                    hasChickenAbbreviation;
+                  const isVeg = !isNonVeg;
                   const cartItem = cart.find(item => item.id === food._id || item.id === food.name);
                   const quantity = cartItem?.quantity || 0;
-                  
+
                   return (
-                    <div 
+                    <div
                       key={food._id || food.name}
                       className="gallery-card"
                       onClick={() => navigate(`/product/${food._id || toSlug(food.name)}`)}
@@ -211,18 +260,18 @@ export default function ImageGallery() {
                           {quantity} in cart
                         </div>
                       )}
-                      <img 
-                        src={food.imageUrl} 
-                        alt={food.name} 
+                      <img
+                        src={food.imageUrl}
+                        alt={food.name}
                         onError={(e) => {
                           // #region agent log (H2 H4)
-                          const _dbgImg3 = {location:'ImageGallery.jsx:onError',message:'Image failed to load',data:{name:food.name,src:e.target.src,foodImageUrl:food.imageUrl},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'H2_H4'};
+                          const _dbgImg3 = { location: 'ImageGallery.jsx:onError', message: 'Image failed to load', data: { name: food.name, src: e.target.src, foodImageUrl: food.imageUrl }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run2', hypothesisId: 'H2_H4' };
                           console.log('[DEBUG LOG]', _dbgImg3);
-                          fetch('http://127.0.0.1:7242/ingest/1ee4de27-3e18-4bba-b840-237c70697464',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(_dbgImg3)}).catch(()=>{});
+                          fetch('http://127.0.0.1:7242/ingest/1ee4de27-3e18-4bba-b840-237c70697464', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(_dbgImg3) }).catch(() => { });
                           // #endregion
                           e.target.onerror = null;
                           e.target.src = '/placeholder-food.jpg';
-                        }} 
+                        }}
                       />
                       <div className="gallery-card-content">
                         <h3 className="gallery-item-name">{food.name}</h3>
@@ -230,7 +279,7 @@ export default function ImageGallery() {
                           <span className="gallery-price">
                             ₹{food.price && food.price > 0 ? Number(food.price).toFixed(0) : "N/A"}
                           </span>
-                          <button 
+                          <button
                             className="add-to-cart-btn"
                             onClick={(e) => handleAddToCart(e, food)}
                           >
