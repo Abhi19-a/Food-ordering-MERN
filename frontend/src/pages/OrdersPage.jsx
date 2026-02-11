@@ -57,6 +57,23 @@ const OrdersPage = () => {
     }
   }, [searchParams, clearCart]);
 
+  const removeOrder = (orderIndex) => {
+    try {
+      const savedOrders = localStorage.getItem('foodOrders');
+      if (savedOrders) {
+        const parsedOrders = JSON.parse(savedOrders);
+        // Remove the order at the specified index
+        parsedOrders.splice(orderIndex, 1);
+        // Update localStorage
+        localStorage.setItem('foodOrders', JSON.stringify(parsedOrders));
+        // Update state
+        setOrders(parsedOrders);
+      }
+    } catch (error) {
+      console.error('Error removing order:', error);
+    }
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'Paid':
@@ -182,6 +199,26 @@ const OrdersPage = () => {
                   <strong>Delivery Address:</strong> {order.deliveryAddress}
                 </div>
               )}
+              <button
+                className="remove-order-btn"
+                onClick={() => removeOrder(index)}
+                style={{
+                  marginTop: '12px',
+                  padding: '8px 16px',
+                  background: '#ef4444',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  transition: 'background 0.2s'
+                }}
+                onMouseOver={(e) => e.target.style.background = '#dc2626'}
+                onMouseOut={(e) => e.target.style.background = '#ef4444'}
+              >
+                🗑️ Remove Order
+              </button>
             </div>
           </div>
         ))}

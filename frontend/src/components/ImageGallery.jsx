@@ -195,10 +195,6 @@ export default function ImageGallery() {
       </div>
 
       <div className="gallery-filter-row">
-        <div>
-          <p className="gallery-kicker">Browse by category</p>
-          <h2 className="gallery-heading">Veg, Non-Veg, Snacks & more</h2>
-        </div>
         <div className="gallery-filters">
           {categories.map((category) => (
             <button

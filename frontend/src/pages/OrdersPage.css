@@ -6,7 +6,7 @@
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
 }
 
-.orders-page > h1 {
+.orders-page>h1 {
   max-width: 1400px;
   margin: 0 auto 2rem;
 }
@@ -159,12 +159,14 @@
   align-items: center;
   margin-bottom: 1rem;
   font-size: 1.1rem;
+  font-weight: 600;
+  color: #1a1a1a;
 }
 
 .total-amount {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #f4d35e;
+  color: #22c55e;
 }
 
 .order-address {
@@ -190,4 +192,3 @@
     text-align: center;
   }
 }
-
