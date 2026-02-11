@@ -28,13 +28,19 @@ const HomePage = () => (
 
 const AuthPageWrapper = ({ children }) => (
   <div style={{
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    minHeight: "calc(100vh - 200px)",
     width: "100%",
+    height: "100vh",
     padding: "2rem 1rem",
-    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+    zIndex: 1000
   }}>
     <div style={{
       background: "white",
@@ -79,7 +85,7 @@ const AppLayout = () => {
 
   return (
     <div className="app-container">
-      <header className="app-header">
+      {!isAuthRoute && (<header className="app-header">
         <div className="brand">
           <Link to="/">
             <h1>
@@ -108,7 +114,7 @@ const AppLayout = () => {
             </SignedOut>
           )}
         </div>
-      </header>
+      </header>)}
 
       <main>
         <Routes>
@@ -134,10 +140,6 @@ const AppLayout = () => {
           />
         </Routes>
       </main>
-
-      <footer className="app-footer">
-        Backend: http://localhost:4000 • Frontend: Vite
-      </footer>
     </div>
   );
 };
