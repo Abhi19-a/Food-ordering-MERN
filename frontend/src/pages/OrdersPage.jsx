@@ -1,43 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
-import { api } from '../api';
 import './OrdersPage.css';
 
 const OrdersPage = () => {
   const [orders, setOrders] = useState([]);
   const [successMessage, setSuccessMessage] = useState(null);
   const [searchParams] = useSearchParams();
-  const { clearCart } = useCart();
 
   useEffect(() => {
-    // Check if coming from successful Stripe payment
+    // Check if coming from successful order placement
     const isSuccess = searchParams.get('success') === 'true';
-    const pendingOrderId = localStorage.getItem('pendingOrderId');
+    const orderId = searchParams.get('orderId');
 
-    if (isSuccess && pendingOrderId) {
-      // Clear cart and show success message
-      clearCart();
-      setSuccessMessage(`Payment successful! Order ID: ${pendingOrderId}`);
-      localStorage.removeItem('pendingOrderId');
-
-      // Save order to local storage
-      const newOrder = {
-        orderId: pendingOrderId,
-        date: new Date().toISOString(),
-        items: JSON.parse(localStorage.getItem('lastCartItems') || '[]'),
-        total: parseFloat(localStorage.getItem('lastCartTotal') || '0'),
-        status: 'Paid'
-      };
-
-      try {
-        const savedOrders = localStorage.getItem('foodOrders');
-        const existingOrders = savedOrders ? JSON.parse(savedOrders) : [];
-        existingOrders.push(newOrder);
-        localStorage.setItem('foodOrders', JSON.stringify(existingOrders));
-      } catch (error) {
-        console.error('Error saving order:', error);
-      }
+    if (isSuccess && orderId) {
+      setSuccessMessage(`Order placed successfully! Order ID: ${orderId}`);
 
       // Clear URL params
       window.history.replaceState({}, '', '/orders');
@@ -55,7 +32,7 @@ const OrdersPage = () => {
     } catch (error) {
       console.error('Error loading orders:', error);
     }
-  }, [searchParams, clearCart]);
+  }, [searchParams]);
 
   const removeOrder = (orderIndex) => {
     try {
