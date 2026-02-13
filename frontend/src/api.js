@@ -63,51 +63,7 @@ export const api = {
       console.error("Fetch error:", error);
       throw error;
     }
-  },
-
-  // Create Stripe Checkout session
-  createCheckoutSession: async (items, successUrl, cancelUrl) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/payment/create-checkout-session`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          items,
-          successUrl: successUrl || `${window.location.origin}/orders?success=true`,
-          cancelUrl: cancelUrl || `${window.location.origin}/cart?cancelled=true`
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        throw new Error(error.error || "Failed to create checkout session");
-      }
-
-      return response.json();
-    } catch (error) {
-      console.error("Error creating checkout session:", error);
-      throw error;
-    }
-  },
-
-  // Verify Stripe payment
-  verifyPayment: async (sessionId) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/payment/verify/${sessionId}`);
-
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        throw new Error(error.error || "Payment verification failed");
-      }
-
-      return response.json();
-    } catch (error) {
-      console.error("Error verifying payment:", error);
-      throw error;
-    }
-  },
+  }
 };
 
 export const checkApiHealth = async () => {
