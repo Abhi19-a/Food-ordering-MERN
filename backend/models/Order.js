@@ -6,14 +6,6 @@ const orderSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
-  stripeSessionId: {
-    type: String,
-    default: null
-  },
-  stripePaymentId: {
-    type: String,
-    default: null
-  },
   items: [{
     id: String,
     name: String,
@@ -32,7 +24,7 @@ const orderSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["pending", "paid", "failed", "expired"],
+    enum: ["pending", "paid", "failed", "expired", "delivered"],
     default: "pending"
   },
   customerEmail: String,
