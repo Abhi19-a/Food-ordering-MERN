@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
-import { api } from '../api';
 import './CartPage.css';
 
 const CartPage = () => {
@@ -15,48 +14,39 @@ const CartPage = () => {
   } = useCart();
 
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentError, setPaymentError] = useState(null);
-  const [searchParams] = useSearchParams();
-
-  // Check for cancelled payment
-  useEffect(() => {
-    if (searchParams.get('cancelled') === 'true') {
-      setPaymentError('Payment was cancelled. Your cart items are still saved.');
-    }
-  }, [searchParams]);
+  const navigate = useNavigate();
 
   const handleCheckout = async () => {
     if (cart.length === 0) return;
 
     setIsProcessing(true);
-    setPaymentError(null);
 
     try {
-      // Create Stripe Checkout session
-      const sessionData = await api.createCheckoutSession(
-        cart.map(item => ({
-          id: item.id,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          category: item.category,
-          imageUrl: item.imageUrl
-        }))
-      );
+      // Create order ID
+      const orderId = `ORD-${Date.now()}`;
 
-      if (sessionData.success && sessionData.url) {
-        // Save order ID for reference
-        localStorage.setItem('pendingOrderId', sessionData.orderId);
+      // Create order object
+      const newOrder = {
+        orderId,
+        date: new Date().toISOString(),
+        items: cart,
+        total: totalPrice,
+        status: 'Paid'
+      };
 
-        // Redirect to Stripe Checkout
-        window.location.href = sessionData.url;
-      } else {
-        throw new Error('Failed to create checkout session');
-      }
+      // Save order to localStorage
+      const savedOrders = localStorage.getItem('foodOrders');
+      const existingOrders = savedOrders ? JSON.parse(savedOrders) : [];
+      existingOrders.push(newOrder);
+      localStorage.setItem('foodOrders', JSON.stringify(existingOrders));
 
+      // Clear cart
+      clearCart();
+
+      // Navigate to orders page with success message
+      navigate(`/orders?success=true&orderId=${orderId}`);
     } catch (error) {
       console.error('Checkout error:', error);
-      setPaymentError(error.message || 'Failed to initiate payment. Please try again.');
       setIsProcessing(false);
     }
   };
@@ -155,19 +145,6 @@ const CartPage = () => {
             <span>₹{totalPrice.toFixed(2)}</span>
           </div>
 
-          {paymentError && (
-            <div className="payment-error" style={{
-              color: '#ef4444',
-              background: '#fef2f2',
-              padding: '12px',
-              borderRadius: '8px',
-              marginBottom: '16px',
-              fontSize: '14px'
-            }}>
-              {paymentError}
-            </div>
-          )}
-
           <button
             className="checkout-btn"
             onClick={handleCheckout}
@@ -177,24 +154,8 @@ const CartPage = () => {
               cursor: isProcessing ? 'not-allowed' : 'pointer'
             }}
           >
-            {isProcessing ? 'Redirecting to Stripe...' : 'Pay with Stripe'}
+            {isProcessing ? 'Processing...' : 'Place Order'}
           </button>
-
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-            marginTop: '12px',
-            color: '#666',
-            fontSize: '13px'
-          }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-            </svg>
-            Secure payment powered by Stripe
-          </div>
 
           <Link to="/" className="continue-shopping">
             ← Continue Shopping
