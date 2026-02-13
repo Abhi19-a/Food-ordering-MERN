@@ -1,29 +1,41 @@
 import express from 'express';
 import mongoose from 'mongoose';
+import { adminConfig } from '../config/credentials.js';
 
 const router = express.Router();
 
-// Import Food model from main backend
+// Use the same Food schema as backend (with slug + available)
 const foodSchema = new mongoose.Schema({
     name: { type: String, required: true },
+    slug: { type: String, required: true, unique: true },
     price: { type: Number, required: true },
-    category: { type: String, required: true },
-    imageUrl: String,
+    category: String,
     description: String,
+    imageUrl: String,
     available: { type: Boolean, default: true }
 }, { timestamps: true });
 
-const Food = mongoose.model('Food', foodSchema);
+// Auto-generate slug from name before saving
+foodSchema.pre('save', function (next) {
+    if (this.isModified('name')) {
+        this.slug = this.name
+            .toLowerCase()
+            .replace(/[^\w\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-')
+            .trim();
+    }
+    next();
+});
 
-// Simple authentication middleware (hardcoded for now)
-const ADMIN_USERNAME = 'shopkeeper';
-const ADMIN_PASSWORD = 'admin123';
+// Avoid recompiling model if it already exists
+const Food = mongoose.models.Food || mongoose.model('Food', foodSchema);
 
 // Login endpoint
 router.post('/login', (req, res) => {
     const { username, password } = req.body;
 
-    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+    if (username === adminConfig.username && password === adminConfig.password) {
         res.json({
             success: true,
             message: 'Login successful',
@@ -37,7 +49,7 @@ router.post('/login', (req, res) => {
     }
 });
 
-// Get all food items
+// Get all food items (admin sees ALL including unavailable)
 router.get('/foods', async (req, res) => {
     try {
         const foods = await Food.find().sort({ createdAt: -1 });

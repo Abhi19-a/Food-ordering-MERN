@@ -8,12 +8,13 @@ const FoodSchema = new mongoose.Schema(
     category: String,
     description: String,
     imageUrl: String,
+    available: { type: Boolean, default: true },
   },
   { timestamps: true }
 );
 
 // Create slug from name before saving
-FoodSchema.pre('save', function(next) {
+FoodSchema.pre('save', function (next) {
   if (this.isModified('name')) {
     this.slug = this.name
       .toLowerCase()

@@ -3,13 +3,19 @@ import Food from "../models/Food.js";
 
 const router = express.Router();
 
-// GET /api/foods  (supports ?category=Veg)
+// GET /api/foods  (supports ?category=Veg, ?showAll=true)
 router.get("/", async (req, res) => {
   try {
     const filter = {};
 
     if (req.query.category) {
       filter.category = req.query.category;
+    }
+
+    // By default, only show available items (for customer dashboard)
+    // Admin panel passes ?showAll=true to see all items
+    if (req.query.showAll !== 'true') {
+      filter.available = { $ne: false };
     }
 
     const foods = await Food.find(filter).sort({ createdAt: -1 });

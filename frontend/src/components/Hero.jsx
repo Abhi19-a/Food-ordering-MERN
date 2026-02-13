@@ -7,7 +7,17 @@ const heroImages = [
   { src: "/images/Chapathi Kurma.jpg", alt: "Chapathi Kurma" }
 ];
 
-export default function Hero() {
+export default function Hero({ onExplore }) {
+  const handleExplore = (e) => {
+    e.preventDefault();
+    if (onExplore) onExplore();
+    // Scroll to gallery after a small delay so it renders first
+    setTimeout(() => {
+      const gallery = document.getElementById('gallery');
+      if (gallery) gallery.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  };
+
   return (
     <section className="hero">
       <div className="hero-decoration hero-decoration-1" aria-hidden="true" />
@@ -27,7 +37,7 @@ export default function Hero() {
             <a className="btn primary" href="#">
               Download Now
             </a>
-            <a className="btn ghost" href="#gallery">
+            <a className="btn ghost" href="#gallery" onClick={handleExplore}>
               Explore Menu
             </a>
           </div>

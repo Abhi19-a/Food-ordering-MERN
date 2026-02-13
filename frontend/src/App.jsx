@@ -2,6 +2,7 @@
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate } from "react-router-dom";
 import { SignedIn, SignedOut, SignIn, SignUp, RedirectToSignIn, UserButton } from "@clerk/clerk-react";
 import { CartProvider } from "./contexts/CartContext";
+import { useState } from "react";
 import "./App.css";
 import Hero from "./components/Hero";
 import ImageGallery from "./components/ImageGallery";
@@ -17,14 +18,20 @@ const signInLocalization = {
   }
 };
 
-const HomePage = () => (
-  <>
-    <Hero />
-    <section id="gallery">
-      <ImageGallery />
-    </section>
-  </>
-);
+const HomePage = () => {
+  const [showMenu, setShowMenu] = useState(false);
+
+  return (
+    <>
+      <Hero onExplore={() => setShowMenu(true)} />
+      {showMenu && (
+        <section id="gallery">
+          <ImageGallery />
+        </section>
+      )}
+    </>
+  );
+};
 
 const AuthPageWrapper = ({ children }) => (
   <div style={{

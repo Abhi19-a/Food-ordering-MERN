@@ -39,7 +39,14 @@
         <header class="dashboard-header">
             <div class="header-content">
                 <h1>🏪 Shopkeeper Dashboard</h1>
-                <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+                <div class="header-right">
+                    <!-- Theme Toggle -->
+                    <button id="themeToggle" class="theme-toggle" title="Toggle Dark/Light Mode">
+                        <span class="theme-toggle-icon sun">☀️</span>
+                        <span class="theme-toggle-icon moon">🌙</span>
+                    </button>
+                    <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+                </div>
             </div>
         </header>
 
@@ -128,12 +135,23 @@
                             <option value="Beverages">Beverages</option>
                             <option value="Desserts">Desserts</option>
                             <option value="Snacks">Snacks</option>
+                            <option value="Milkshakes">Milkshakes</option>
+                            <option value="Juices">Juices</option>
+                            <option value="Ice Creams">Ice Creams</option>
+                            <option value="Combo Packs">Combo Packs</option>
+                            <option value="Non-Veg Items">Non-Veg Items</option>
                         </select>
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="itemImage">Image URL</label>
-                    <input type="url" id="itemImage" placeholder="https://example.com/image.jpg">
+                    <label for="itemImage">Select Image</label>
+                    <select id="itemImage">
+                        <option value="">-- Select an image --</option>
+                    </select>
+                    <div id="imagePreview" style="margin-top:10px;display:none;">
+                        <img id="imagePreviewImg" src="" alt="Preview"
+                            style="width:80px;height:80px;object-fit:cover;border-radius:10px;">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="itemDescription">Description</label>
@@ -152,6 +170,9 @@
             </form>
         </div>
     </div>
+
+    <!-- Toast container -->
+    <div id="toastContainer"></div>
 
     <script src="app.js"></script>
 </body>

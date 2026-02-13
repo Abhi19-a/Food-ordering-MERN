@@ -55,3 +55,6 @@ coverage/
 backend/checkAPI.js
 backend/checkPrices.js
 backend/env-config.js
+
+# Shopkeeper panel credentials (keep this secure!)
+shopkeeper-panel/config/credentials.js
