@@ -169,7 +169,7 @@ const OrdersPage = () => {
             <div className="order-footer">
               <div className="order-total">
                 <span>Total Amount:</span>
-                <span className="total-amount">₹{order.total?.toFixed(2) || '0.00'}</span>
+                <span className="total-amount">₹{(order.amount || order.total || 0).toFixed(2)}</span>
               </div>
               {order.deliveryAddress && (
                 <div className="order-address">
