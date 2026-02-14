@@ -1,7 +1,11 @@
 const API_URL = 'http://localhost:5000/api/admin';
+const BACKEND_URL = 'http://localhost:4000';
 let authToken = localStorage.getItem('adminToken');
 let allFoods = [];
+let allOrders = [];
 let editingItemId = null;
+let socket = null;
+let unreadOrdersCount = 0;
 
 // ===== Image files list (same as frontend) =====
 const imageFiles = [
@@ -70,12 +74,94 @@ document.addEventListener('DOMContentLoaded', () => {
     // Populate image dropdown
     populateImageDropdown();
 
+    // Setup tab navigation
+    setupTabs();
+
     if (authToken) {
         showDashboard();
+        connectSocket();
     } else {
         showLogin();
     }
 });
+
+// ===== Socket.IO Connection =====
+function connectSocket() {
+    if (socket) return;
+
+    socket = io(BACKEND_URL);
+
+    socket.on('connect', () => {
+        console.log('🔌 Connected to backend');
+    });
+
+    socket.on('newOrder', (order) => {
+        console.log('🔔 New order received:', order);
+
+        // Play notification sound
+        playNotificationSound();
+
+        // Show toast notification
+        showToast(`New order from ${order.customerName}!`, 'info');
+
+        // Update notification badge
+        unreadOrdersCount++;
+        updateNotificationBadge();
+
+        // Reload orders
+        loadOrders();
+    });
+
+    socket.on('disconnect', () => {
+        console.log('❌ Disconnected from backend');
+    });
+}
+
+// ===== Notification Sound =====
+function playNotificationSound() {
+    const audio = document.getElementById('notificationSound');
+    if (audio) {
+        audio.play().catch(e => console.log('Could not play sound:', e));
+    }
+}
+
+// ===== Update Notification Badge =====
+function updateNotificationBadge() {
+    const badge = document.getElementById('orderNotificationBadge');
+    if (unreadOrdersCount > 0) {
+        badge.textContent = unreadOrdersCount;
+        badge.style.display = 'block';
+    } else {
+        badge.style.display = 'none';
+    }
+}
+
+// ===== Tab Navigation =====
+function setupTabs() {
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tabName = btn.getAttribute('data-tab');
+
+            // Remove active class from all buttons and contents
+            tabBtns.forEach(b => b.classList.remove('active'));
+            tabContents.forEach(c => c.classList.remove('active'));
+
+            // Add active class to clicked button and corresponding content
+            btn.classList.add('active');
+            document.getElementById(`${tabName}Tab`).classList.add('active');
+
+            // If switching to orders tab, clear notifications
+            if (tabName === 'orders') {
+                unreadOrdersCount = 0;
+                updateNotificationBadge();
+                loadOrders();
+            }
+        });
+    });
+}
 
 // ===== Theme Toggle =====
 themeToggle.addEventListener('click', () => {
@@ -87,16 +173,13 @@ themeToggle.addEventListener('click', () => {
 // ===== Populate image dropdown =====
 function populateImageDropdown() {
     const select = document.getElementById('itemImage');
-    // Keep the first default option
     imageFiles.forEach(filename => {
         const option = document.createElement('option');
         option.value = `/images/${filename}`;
-        // Display-friendly name (remove extension)
         option.textContent = filename.replace(/\.[^.]+$/, '');
         select.appendChild(option);
     });
 
-    // Show preview on change
     select.addEventListener('change', () => {
         const preview = document.getElementById('imagePreview');
         const img = document.getElementById('imagePreviewImg');
@@ -111,18 +194,15 @@ function populateImageDropdown() {
 
 // ===== Toast Notification =====
 function showToast(message, type = 'success') {
-    const container = document.getElementById('toastContainer');
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
     toast.textContent = message;
     document.body.appendChild(toast);
 
-    // Trigger animation
     requestAnimationFrame(() => {
         toast.classList.add('show');
     });
 
-    // Remove after 3 seconds
     setTimeout(() => {
         toast.classList.remove('show');
         setTimeout(() => toast.remove(), 300);
@@ -148,6 +228,7 @@ loginForm.addEventListener('submit', async (e) => {
             authToken = data.token;
             localStorage.setItem('adminToken', authToken);
             showDashboard();
+            connectSocket();
             showToast('Login successful!');
         } else {
             showToast('Invalid credentials!', 'error');
@@ -162,6 +243,10 @@ loginForm.addEventListener('submit', async (e) => {
 logoutBtn.addEventListener('click', () => {
     localStorage.removeItem('adminToken');
     authToken = null;
+    if (socket) {
+        socket.disconnect();
+        socket = null;
+    }
     showLogin();
 });
 
@@ -175,6 +260,7 @@ function showDashboard() {
     loginScreen.style.display = 'none';
     dashboard.style.display = 'block';
     loadFoods();
+    loadOrders();
 }
 
 // ===== Load all food items =====
@@ -190,14 +276,133 @@ async function loadFoods() {
     }
 }
 
+// ===== Load all orders =====
+async function loadOrders() {
+    try {
+        const response = await fetch(`${BACKEND_URL}/api/orders`);
+        allOrders = await response.json();
+        displayOrders(allOrders);
+    } catch (error) {
+        console.error('Error loading orders:', error);
+        showToast('Failed to load orders', 'error');
+    }
+}
+
+// ===== Display orders in table =====
+function displayOrders(orders) {
+    const tbody = document.getElementById('ordersTableBody');
+
+    if (orders.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                    No orders yet. Waiting for customers...
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = orders.map(order => {
+        const itemsPreview = order.items.slice(0, 2).map(item =>
+            `${item.name} (x${item.quantity})`
+        ).join(', ') + (order.items.length > 2 ? '...' : '');
+
+        const timeAgo = getTimeAgo(order.createdAt || order.date);
+
+        return `
+        <tr class="${isRecentOrder(order) ? 'new-order-highlight' : ''}">
+            <td><strong>${order.orderId}</strong></td>
+            <td>
+                <div>${order.customerName || 'Guest'}</div>
+                <small style="color: var(--text-muted);">${order.customerEmail || ''}</small>
+            </td>
+            <td class="order-items-cell">
+                <div class="order-item-preview">${itemsPreview}</div>
+                <small>(${order.items.length} item${order.items.length > 1 ? 's' : ''})</small>
+            </td>
+            <td><span class="price-tag">₹${order.amount.toFixed(2)}</span></td>
+            <td>
+                <span class="status-badge order-status-${order.status.toLowerCase()}">
+                    ${order.status.toUpperCase()}
+                </span>
+            </td>
+            <td class="time-ago">${timeAgo}</td>
+            <td>
+                <div class="action-buttons">
+                    <button class="btn-icon btn-edit" onclick="viewOrderDetails('${order._id}')" title="View">
+                        👁️ View
+                    </button>
+                    <button class="btn-icon btn-toggle" onclick="markAsDelivered('${order._id}')" title="Mark Delivered">
+                        ✅ Deliver
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `}).join('');
+}
+
+// ===== Helper: Check if order is recent (< 10 seconds old) =====
+function isRecentOrder(order) {
+    const orderTime = new Date(order.createdAt || order.date).getTime();
+    const now = Date.now();
+    return (now - orderTime) < 10000; // 10 seconds
+}
+
+// ===== Helper: Get time ago string =====
+function getTimeAgo(dateStr) {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (days > 0) return `${days}d ago`;
+    if (hours > 0) return `${hours}h ago`;
+    if (minutes > 0) return `${minutes}m ago`;
+    return 'Just now';
+}
+
+// ===== View order details =====
+function viewOrderDetails(orderId) {
+    const order = allOrders.find(o => o._id === orderId);
+    if (!order) return;
+
+    const itemsList = order.items.map(item =>
+        `- ${item.name} x ${item.quantity} @ ₹${item.price} = ₹${(item.price * item.quantity).toFixed(2)}`
+    ).join('\n');
+
+    alert(`ORDER DETAILS\n\nOrder ID: ${order.orderId}\n\nCustomer: ${order.customerName}\nEmail: ${order.customerEmail}\nPhone: ${order.customerPhone}\n\nItems:\n${itemsList}\n\nTotal: ₹${order.amount.toFixed(2)}\nStatus: ${order.status.toUpperCase()}`);
+}
+
+// ===== Mark order as delivered =====
+async function markAsDelivered(orderId) {
+    if (!confirm('Mark this order as delivered?')) return;
+
+    try {
+        const response = await fetch(`${BACKEND_URL}/api/orders/${orderId}/status`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'delivered' })
+        });
+
+        if (response.ok) {
+            showToast('Order marked as delivered!');
+            loadOrders();
+        } else {
+            showToast('Failed to update order', 'error');
+        }
+    } catch (error) {
+        console.error('Error updating order:', error);
+        showToast('Failed to update order', 'error');
+    }
+}
+
 // ===== Resolve image URL for display =====
 function resolveImageUrl(food) {
-    // If the food has a stored imageUrl that matches a local image, use it
     if (food.imageUrl && food.imageUrl.startsWith('/images/')) {
         return food.imageUrl;
     }
 
-    // Try to match food name to a local image file
     const foodName = food.name.toLowerCase();
     const match = imageFiles.find(filename => {
         const imgName = filename.replace(/\.[^.]+$/, '').toLowerCase();
@@ -205,8 +410,6 @@ function resolveImageUrl(food) {
     });
 
     if (match) return `/images/${match}`;
-
-    // Fallback
     return food.imageUrl || '/images/Buns.jpg';
 }
 
@@ -308,7 +511,6 @@ async function editItem(id) {
         document.getElementById('itemDescription').value = food.description || '';
         document.getElementById('itemAvailable').checked = food.available !== false;
 
-        // Set image dropdown
         const imageSelect = document.getElementById('itemImage');
         const preview = document.getElementById('imagePreview');
         const previewImg = document.getElementById('imagePreviewImg');
@@ -426,7 +628,6 @@ function closeModal() {
     editingItemId = null;
 }
 
-// Close modal on outside click
 itemModal.addEventListener('click', (e) => {
     if (e.target === itemModal) {
         closeModal();
