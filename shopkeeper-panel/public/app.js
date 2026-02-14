@@ -309,6 +309,7 @@ function displayOrders(orders) {
         ).join(', ') + (order.items.length > 2 ? '...' : '');
 
         const timeAgo = getTimeAgo(order.createdAt || order.date);
+        const isDelivered = order.status.toLowerCase() === 'delivered';
 
         return `
         <tr class="${isRecentOrder(order) ? 'new-order-highlight' : ''}">
@@ -333,9 +334,15 @@ function displayOrders(orders) {
                     <button class="btn-icon btn-edit" onclick="viewOrderDetails('${order._id}')" title="View">
                         👁️ View
                     </button>
+                    ${!isDelivered ? `
                     <button class="btn-icon btn-toggle" onclick="markAsDelivered('${order._id}')" title="Mark Delivered">
                         ✅ Deliver
                     </button>
+                    ` : `
+                    <button class="btn-icon btn-delete" onclick="removeOrder('${order._id}')" title="Remove Order">
+                        🗑️ Remove
+                    </button>
+                    `}
                 </div>
             </td>
         </tr>
@@ -394,6 +401,27 @@ async function markAsDelivered(orderId) {
     } catch (error) {
         console.error('Error updating order:', error);
         showToast('Failed to update order', 'error');
+    }
+}
+
+// ===== Remove order (only delivered orders) =====
+async function removeOrder(orderId) {
+    if (!confirm('Remove this delivered order from the list? This action cannot be undone.')) return;
+
+    try {
+        const response = await fetch(`${BACKEND_URL}/api/orders/${orderId}`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            showToast('Order removed successfully!');
+            loadOrders();
+        } else {
+            showToast('Failed to remove order', 'error');
+        }
+    } catch (error) {
+        console.error('Error removing order:', error);
+        showToast('Failed to remove order', 'error');
     }
 }
 
