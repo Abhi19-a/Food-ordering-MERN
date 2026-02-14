@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { useUser } from '@clerk/clerk-react';
 import { useCart } from '../contexts/CartContext';
 import './CartPage.css';
 
@@ -15,6 +16,7 @@ const CartPage = () => {
 
   const [isProcessing, setIsProcessing] = useState(false);
   const navigate = useNavigate();
+  const { user } = useUser();
 
   const handleCheckout = async () => {
     if (cart.length === 0) return;
@@ -25,19 +27,41 @@ const CartPage = () => {
       // Create order ID
       const orderId = `ORD-${Date.now()}`;
 
-      // Create order object
+      // Create order object with customer details
       const newOrder = {
         orderId,
-        date: new Date().toISOString(),
         items: cart,
-        total: totalPrice,
-        status: 'Paid'
+        amount: totalPrice,
+        currency: 'INR',
+        status: 'paid',
+        customerEmail: user?.primaryEmailAddress?.emailAddress || 'guest@example.com',
+        customerName: user?.fullName || 'Guest User',
+        customerPhone: user?.phoneNumbers?.[0]?.phoneNumber || 'N/A'
       };
 
-      // Save order to localStorage
+      // Send order to backend API
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+      const response = await fetch(`${API_URL}/api/orders`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newOrder)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create order');
+      }
+
+      const savedOrder = await response.json();
+
+      // Also save to localStorage as backup
       const savedOrders = localStorage.getItem('foodOrders');
       const existingOrders = savedOrders ? JSON.parse(savedOrders) : [];
-      existingOrders.push(newOrder);
+      existingOrders.push({
+        ...savedOrder,
+        date: new Date().toISOString()
+      });
       localStorage.setItem('foodOrders', JSON.stringify(existingOrders));
 
       // Clear cart
@@ -47,6 +71,7 @@ const CartPage = () => {
       navigate(`/orders?success=true&orderId=${orderId}`);
     } catch (error) {
       console.error('Checkout error:', error);
+      alert('Failed to place order. Please try again.');
       setIsProcessing(false);
     }
   };
