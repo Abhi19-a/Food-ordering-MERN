@@ -700,3 +700,127 @@ body.dark-mode .btn-delete:hover {
         flex-wrap: wrap;
     }
 }
+
+/* ===== TAB NAVIGATION ===== */
+.tab-navigation {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.tab-btn {
+    padding: 12px 24px;
+    border: none;
+    background: none;
+    color: var(--text-secondary);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: color 0.2s ease, border-color 0.2s ease;
+    position: relative;
+}
+
+.tab-btn:hover {
+    color: var(--text-primary);
+}
+
+.tab-btn.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+
+.notification-badge {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    background: #e53e3e;
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 10px;
+    min-width: 18px;
+    text-align: center;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* ===== ORDERS ===== */
+.orders-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.orders-header h2 {
+    color: var(--text-heading);
+    font-size: 24px;
+}
+
+.order-items-cell {
+    max-width: 300px;
+}
+
+.order-item-preview {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin: 2px 0;
+}
+
+.order-status-pending {
+    background: #fff3e0;
+    color: #f57c00;
+}
+
+.order-status-paid {
+    background: #d4edda;
+    color: #155724;
+}
+
+.order-status-delivered {
+    background: #cce5ff;
+    color: #004085;
+}
+
+body.dark-mode .order-status-pending {
+    background: #2e1a00;
+    color: #ffb74d;
+}
+
+body.dark-mode .order-status-paid {
+    background: #1a3a2a;
+    color: #6dd49e;
+}
+
+body.dark-mode .order-status-delivered {
+    background: #1a2a3a;
+    color: #66b3ff;
+}
+
+.time-ago {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.new-order-highlight {
+    animation: highlightOrder 2s ease-out;
+}
+
+@keyframes highlightOrder {
+    0% {
+        background: rgba(102, 126, 234, 0.3);
+    }
+
+    100% {
+        background: transparent;
+    }
+}
