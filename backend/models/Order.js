@@ -27,6 +27,15 @@ const orderSchema = new mongoose.Schema({
     enum: ["pending", "paid", "failed", "expired", "delivered"],
     default: "pending"
   },
+  paymentMethod: {
+    type: String,
+    enum: ["Cash on Delivery", "Card Payment", "UPI Payment"],
+    default: "Cash on Delivery"
+  },
+  transactionId: {
+    type: String,
+    default: null
+  },
   customerEmail: String,
   customerPhone: String,
   customerName: String
