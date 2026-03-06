@@ -13,6 +13,7 @@ const httpServer = createServer(app);
 // Setup Socket.IO with CORS
 const allowedOrigins = [
   "http://localhost:5173",
+  "http://localhost:5174",
   "http://localhost:5000",
   "http://10.111.16.25:5173",
   "http://10.111.16.25:5000",

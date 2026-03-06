@@ -171,6 +171,22 @@ const OrdersPage = () => {
                 <span>Total Amount:</span>
                 <span className="total-amount">₹{(order.amount || order.total || 0).toFixed(2)}</span>
               </div>
+              {order.paymentMethod && (
+                <div className="order-payment" style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontSize: '14px',
+                  color: '#6b7280',
+                  marginTop: '8px'
+                }}>
+                  <strong>Payment:</strong> 
+                  <span style={{ color: '#111827' }}>
+                    {order.paymentMethod}
+                    {order.transactionId && ` (ID: ${order.transactionId})`}
+                  </span>
+                </div>
+              )}
               {order.deliveryAddress && (
                 <div className="order-address">
                   <strong>Delivery Address:</strong> {order.deliveryAddress}

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { useUser } from '@clerk/clerk-react';
 import { useCart } from '../contexts/CartContext';
+import PaymentModal from '../components/PaymentModal';
 import './CartPage.css';
 
 const CartPage = () => {
@@ -15,12 +16,16 @@ const CartPage = () => {
   } = useCart();
 
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const navigate = useNavigate();
   const { user } = useUser();
 
-  const handleCheckout = async () => {
+  const handleCheckout = () => {
     if (cart.length === 0) return;
+    setShowPaymentModal(true);
+  };
 
+  const handlePayment = async (paymentInfo) => {
     setIsProcessing(true);
 
     try {
@@ -33,7 +38,9 @@ const CartPage = () => {
         items: cart,
         amount: totalPrice,
         currency: 'INR',
-        status: 'paid',
+        status: paymentInfo.status,
+        paymentMethod: paymentInfo.method,
+        transactionId: paymentInfo.transactionId,
         customerEmail: user?.primaryEmailAddress?.emailAddress || 'guest@example.com',
         customerName: user?.fullName || 'Guest User',
         customerPhone: user?.phoneNumbers?.[0]?.phoneNumber || 'N/A'
@@ -66,6 +73,9 @@ const CartPage = () => {
 
       // Clear cart
       clearCart();
+
+      // Close modal
+      setShowPaymentModal(false);
 
       // Navigate to orders page with success message
       navigate(`/orders?success=true&orderId=${orderId}`);
@@ -179,7 +189,7 @@ const CartPage = () => {
               cursor: isProcessing ? 'not-allowed' : 'pointer'
             }}
           >
-            {isProcessing ? 'Processing...' : 'Place Order'}
+            {isProcessing ? 'Processing...' : 'Proceed to Payment'}
           </button>
 
           <Link to="/" className="continue-shopping">
@@ -187,6 +197,13 @@ const CartPage = () => {
           </Link>
         </div>
       </div>
+
+      <PaymentModal 
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        onPayment={handlePayment}
+        totalAmount={totalPrice}
+      />
     </div>
   );
 };
