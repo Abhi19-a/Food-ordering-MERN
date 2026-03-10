@@ -6,6 +6,7 @@ import { Server } from "socket.io";
 import connectDB from "./config.js";
 import foodsRouter from "./routes/foods.js";
 import ordersRouter from "./routes/orders.js";
+import adminRouter from "./routes/admin.js";
 
 const app = express();
 const httpServer = createServer(app);
@@ -63,6 +64,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/foods", foodsRouter);
 app.use("/api/orders", ordersRouter);
+app.use("/api/admin", adminRouter);
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {
